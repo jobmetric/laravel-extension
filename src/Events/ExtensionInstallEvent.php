@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Barcode\Events;
+namespace JobMetric\Extension\Events;
 
 use JobMetric\Extension\Models\Extension;
 

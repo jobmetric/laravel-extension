@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
  * @property int id
  * @property string extension
  * @property string name
- * @property string info
+ * @property array info
  * @property Carbon created_at
  * @property Carbon updated_at
  * @method static ExtensionName(string $extension, string $name)

@@ -3,11 +3,15 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
-use JobMetric\Barcode\Events\ExtensionInstallEvent;
-use JobMetric\Barcode\Exceptions\ExtensionAlreadyInstalledException;
-use JobMetric\Barcode\Exceptions\ExtensionConfigFileNotFoundException;
-use JobMetric\Barcode\Exceptions\ExtensionFolderNotFoundException;
-use JobMetric\Barcode\Exceptions\ExtensionRunnerNotFoundException;
+use JobMetric\Extension\Events\ExtensionInstallEvent;
+use JobMetric\Extension\Exceptions\ExtensionAlreadyInstalledException;
+use JobMetric\Extension\Exceptions\ExtensionClassNameNotMatchException;
+use JobMetric\Extension\Exceptions\ExtensionConfigFileNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionConfigurationNotMatchException;
+use JobMetric\Extension\Exceptions\ExtensionDontHaveContractException;
+use JobMetric\Extension\Exceptions\ExtensionDontHaveHandleMethodException;
+use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Throwable;
 
@@ -55,27 +59,43 @@ class Extension
 
         $extension_information = json_decode(file_get_contents(base_path("app/Extensions/$extension/$name/extension.json")), true);
 
-        // check information in extension.json
+        if (!isset($extension_information['extension']) ||
+            !isset($extension_information['name']) ||
+            !isset($extension_information['version']) ||
+            !isset($extension_information['multiple'])) {
+            throw new ExtensionConfigurationNotMatchException($extension, $name);
+        }
 
-        if (!file_exists(base_path("app/Extensions/$extension/$name/$name.json"))) {
+        if (!file_exists(base_path("app/Extensions/$extension/$name/$name.php"))) {
             throw new ExtensionRunnerNotFoundException($extension, $name);
         }
 
         $namespace = "App\\Extensions\\$extension\\$name\\$name";
-        if(method_exists($namespace, 'install')) {
+
+        // check class name
+        if (!class_exists($namespace)) {
+            throw new ExtensionClassNameNotMatchException($extension, $name);
+        }
+
+        // check class has implement ExtensionContract
+        if (!in_array('JobMetric\Extension\Contracts\ExtensionContract', class_implements($namespace))) {
+            throw new ExtensionDontHaveContractException($extension, $name);
+        }
+
+        if (method_exists($namespace, 'install')) {
             $namespace::install();
         }
 
         // create a new extension
-        $extension = new ExtensionModel;
+        $extension_model = new ExtensionModel;
 
-        $extension->extension = $extension;
-        $extension->name = $name;
-        $extension->info = $extension_information;
+        $extension_model->extension = $extension;
+        $extension_model->name = $name;
+        $extension_model->info = $extension_information;
 
-        $extension->save();
+        $extension_model->save();
 
-        event(new ExtensionInstallEvent($extension));
+        event(new ExtensionInstallEvent($extension_model));
     }
 
     /**
