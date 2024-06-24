@@ -4,6 +4,8 @@ namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
+use JobMetric\Extension\Events\ExtensionUninstallEvent;
+use JobMetric\Extension\Events\PluginDeleteEvent;
 use JobMetric\Extension\Exceptions\ExtensionAlreadyInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionClassNameNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionConfigFileNotFoundException;
@@ -11,6 +13,8 @@ use JobMetric\Extension\Exceptions\ExtensionConfigurationNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionDontHaveContractException;
 use JobMetric\Extension\Exceptions\ExtensionDontHaveHandleMethodException;
 use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
+use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Throwable;
@@ -82,6 +86,7 @@ class Extension
             throw new ExtensionDontHaveContractException($extension, $name);
         }
 
+        // run install method
         if (method_exists($namespace, 'install')) {
             $namespace::install();
         }
@@ -103,13 +108,38 @@ class Extension
      *
      * @param string $extension
      * @param string $name
+     * @param bool $force_delete_plugin
      *
      * @return void
+     * @throws Throwable
      */
-    public function uninstall(string $extension, string $name): void
+    public function uninstall(string $extension, string $name, bool $force_delete_plugin = false): void
     {
-        // check if the extension is installed
-        // if installed, then run the extension uninstaller
+        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first()->load('plugins');
+
+        if (!$extension_model) {
+            throw new ExtensionNotInstalledException($extension, $name);
+        }
+
+        if (!$force_delete_plugin && $extension_model->plugins->count() > 0) {
+            throw new ExtensionHaveSomePluginException($extension, $name);
+        }
+
+        $namespace = "App\\Extensions\\$extension\\$name\\$name";
+
+        if (method_exists($namespace, 'uninstall')) {
+            $namespace::uninstall();
+        }
+
+        $extension_model->plugins()->get()->each(function ($plugin) {
+            event(new PluginDeleteEvent($plugin));
+
+            $plugin->delete();
+        });
+
+        $extension_model->delete();
+
+        event(new ExtensionUninstallEvent($extension_model));
     }
 
     /**

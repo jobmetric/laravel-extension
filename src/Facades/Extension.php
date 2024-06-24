@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Facade;
  * @see \JobMetric\Extension\Extension
  *
  * @method static void install(string $extension, string $name)
- * @method static void uninstall(string $extension, string $name)
+ * @method static void uninstall(string $extension, string $name, bool $force_delete_plugin = false)
  * @method static void update(string $extension, string $name)
  * @method static void installZip(string $path, bool $delete_file = false)
  * @method static void download(string $path)
