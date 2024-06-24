@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Barcode\Exceptions;
+namespace JobMetric\Extension\Exceptions;
 
 use Exception;
 use Throwable;
