@@ -25,9 +25,9 @@ return new class extends Migration {
              * This is the title of each Extension.
              */
 
-            $table->json('options')->nullable();
+            $table->json('fields')->nullable();
             /**
-             * Options of the extension, this field will be filled from the installer file during installation.
+             * Fields of the extension, this field will be filled from the installer file during installation.
              *
              * @example
              * {

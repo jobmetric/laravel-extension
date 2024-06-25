@@ -22,7 +22,7 @@ class PluginFactory extends Factory
         return [
             'extension_id' => null,
             'title' => $this->faker->word,
-            'options' => null,
+            'fields' => null,
             'status' => $this->faker->boolean
         ];
     }
@@ -56,16 +56,16 @@ class PluginFactory extends Factory
     }
 
     /**
-     * set options
+     * set fields
      *
-     * @param array $options
+     * @param array $fields
      *
      * @return static
      */
-    public function setOptions(array $options): static
+    public function setFields(array $fields): static
     {
         return $this->state(fn(array $attributes) => [
-            'options' => $options
+            'fields' => $fields
         ]);
     }
 
