@@ -11,7 +11,6 @@ use JobMetric\Extension\Exceptions\ExtensionClassNameNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionConfigFileNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionConfigurationNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionDontHaveContractException;
-use JobMetric\Extension\Exceptions\ExtensionDontHaveHandleMethodException;
 use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
@@ -53,15 +52,18 @@ class Extension
             throw new ExtensionAlreadyInstalledException($extension, $name);
         }
 
-        if (!is_dir(base_path("app/Extensions/$extension/$name"))) {
+        $app_folder = appFolderName();
+        $app_namespace = appNamespace();
+
+        if (!is_dir(base_path("$app_folder/Extensions/$extension/$name"))) {
             throw new ExtensionFolderNotFoundException($extension, $name);
         }
 
-        if (!file_exists(base_path("app/Extensions/$extension/$name/extension.json"))) {
+        if (!file_exists(base_path("$app_folder/Extensions/$extension/$name/extension.json"))) {
             throw new ExtensionConfigFileNotFoundException($extension, $name);
         }
 
-        $extension_information = json_decode(file_get_contents(base_path("app/Extensions/$extension/$name/extension.json")), true);
+        $extension_information = json_decode(file_get_contents(base_path("$app_folder/Extensions/$extension/$name/extension.json")), true);
 
         if (!isset($extension_information['extension']) ||
             !isset($extension_information['name']) ||
@@ -70,11 +72,11 @@ class Extension
             throw new ExtensionConfigurationNotMatchException($extension, $name);
         }
 
-        if (!file_exists(base_path("app/Extensions/$extension/$name/$name.php"))) {
+        if (!file_exists(base_path("$app_folder/Extensions/$extension/$name/$name.php"))) {
             throw new ExtensionRunnerNotFoundException($extension, $name);
         }
 
-        $namespace = "App\\Extensions\\$extension\\$name\\$name";
+        $namespace = "{$app_namespace}Extensions\\$extension\\$name\\$name";
 
         // check class name
         if (!class_exists($namespace)) {
@@ -115,6 +117,8 @@ class Extension
      */
     public function uninstall(string $extension, string $name, bool $force_delete_plugin = false): void
     {
+        $app_namespace = appNamespace();
+
         $extension_model = ExtensionModel::ExtensionName($extension, $name)->first()->load('plugins');
 
         if (!$extension_model) {
@@ -125,7 +129,7 @@ class Extension
             throw new ExtensionHaveSomePluginException($extension, $name);
         }
 
-        $namespace = "App\\Extensions\\$extension\\$name\\$name";
+        $namespace = "{$app_namespace}Extensions\\$extension\\$name\\$name";
 
         if (method_exists($namespace, 'uninstall')) {
             $namespace::uninstall();

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @see \JobMetric\Extension\Plugin
+ *
+ * @method static array add(string $extension, string $name, array $options)
  */
 class Plugin extends Facade
 {
