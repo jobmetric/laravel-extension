@@ -239,4 +239,57 @@ class PluginTest extends BaseTestCase
         $this->assertEquals('', $plugin_fields[3]['default']);
         $this->assertNull($plugin_fields[3]['value']);
     }
+
+    /**
+     * @throws Throwable
+     */
+    public function testEdit(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $plugin = Plugin::add('Addons', 'Banner', [
+            'title' => 'sample title',
+            'status' => true,
+            'fields' => [
+                'width' => '100',
+                'height' => '100',
+            ]
+        ]);
+
+        $plugin_edit = Plugin::edit($plugin['data']->id, [
+            'title' => 'sample title edit',
+            'status' => false,
+            'fields' => [
+                'width' => '200',
+                'height' => '200',
+            ]
+        ]);
+
+        // Fetch the record from the database
+        $record = DB::table('plugins')->where([
+            'title' => 'sample title edit',
+            'status' => false,
+        ])->first();
+
+        // Decode the fields to compare JSON structure
+        $fields = json_decode($record->fields, true);
+        $expectedFields = [
+            'width' => '200',
+            'height' => '200',
+        ];
+
+        // Assert that the fields match
+        $this->assertEquals($expectedFields, $fields);
+
+        $this->assertIsArray($plugin_edit);
+        $this->assertTrue($plugin_edit['ok']);
+        $this->assertEquals($plugin_edit['message'], trans('extension::base.messages.plugin.edited'));
+        $this->assertInstanceOf(PluginResource::class, $plugin_edit['data']);
+        $this->assertEquals(200, $plugin_edit['status']);
+    }
 }

@@ -5,10 +5,10 @@ namespace JobMetric\Extension;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Validator;
 use JobMetric\Extension\Events\PluginAddEvent;
-use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
+use JobMetric\Extension\Events\PluginEditEvent;
 use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
-use JobMetric\Extension\Http\Requests\AddPluginRequest;
+use JobMetric\Extension\Http\Requests\PluginRequest;
 use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
@@ -141,7 +141,7 @@ class Plugin
 
         $fields_validation = $this->fieldsValidation($extension_model);
 
-        $validator = Validator::make($fields, (new AddPluginRequest)->setFields($fields_validation)->rules());
+        $validator = Validator::make($fields, (new PluginRequest)->setFields($fields_validation)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -178,16 +178,46 @@ class Plugin
      * Edit plugin
      *
      * @param int $plugin_id
+     * @param array $fields
      *
-     * @return void
+     * @return array
+     * @throws Throwable
      */
-    public function edit(int $plugin_id): void
+    public function edit(int $plugin_id, array $fields): array
     {
-        // find the object plugin
-        // read field configuration
-        // check validation fields
-        // edit field
-        // save to database plugin
+        $plugin_model = $this->get($plugin_id);
+
+        $fields_validation = $this->fieldsValidation($plugin_model->extension);
+
+        $validator = Validator::make($fields, (new PluginRequest)->setFields($fields_validation)->rules());
+
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('extension::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+
+            $plugin_model->title = $data['title'];
+            $plugin_model->fields = $data['fields'] ?? [];
+            $plugin_model->status = $data['status'];
+
+            $plugin_model->save();
+
+            event(new PluginEditEvent($plugin_model));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.edited'),
+                'data' => PluginResource::make($plugin_model),
+                'status' => 200
+            ];
+        }
     }
 
     /**

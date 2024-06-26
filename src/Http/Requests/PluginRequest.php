@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use JobMetric\Location\Models\LocationProvince;
 use JobMetric\Location\Rules\CheckExistNameRule;
 
-class AddPluginRequest extends FormRequest
+class PluginRequest extends FormRequest
 {
     public array $fields = [];
 
