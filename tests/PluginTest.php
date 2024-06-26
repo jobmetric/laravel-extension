@@ -3,6 +3,7 @@
 namespace JobMetric\Extension\Tests;
 
 use Illuminate\Support\Facades\DB;
+use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Facades\Plugin;
 use JobMetric\Extension\Http\Resources\PluginResource;
@@ -26,7 +27,7 @@ class PluginTest extends BaseTestCase
 
         $plugin = Plugin::add('Addons', 'Banner', [
             'title' => 'sample title',
-            'status' => 1,
+            'status' => true,
             'fields' => [
                 'width' => '100',
                 'height' => '100',
@@ -36,7 +37,7 @@ class PluginTest extends BaseTestCase
         // Fetch the record from the database
         $record = DB::table('plugins')->where([
             'title' => 'sample title',
-            'status' => 1,
+            'status' => true,
         ])->first();
 
         // Decode the fields to compare JSON structure
@@ -54,6 +55,26 @@ class PluginTest extends BaseTestCase
         $this->assertEquals($plugin['message'], trans('extension::base.messages.plugin.added'));
         $this->assertInstanceOf(PluginResource::class, $plugin['data']);
         $this->assertEquals(201, $plugin['status']);
+
+        // Test if plugin is not multiple
+        try {
+            $plugin = Plugin::add('Addons', 'Banner', [
+                'title' => 'sample title',
+                'status' => true,
+                'fields' => [
+                    'width' => '100',
+                    'height' => '100',
+                ]
+            ]);
+
+            $this->assertIsArray($plugin);
+            $this->assertTrue($plugin['ok']);
+            $this->assertEquals($plugin['message'], trans('extension::base.messages.plugin.added'));
+            $this->assertInstanceOf(PluginResource::class, $plugin['data']);
+            $this->assertEquals(201, $plugin['status']);
+        } catch (Throwable $e) {
+            $this->assertInstanceOf(PluginNotMultipleException::class, $e);
+        }
     }
 
     /**

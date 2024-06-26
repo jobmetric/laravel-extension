@@ -8,6 +8,7 @@ use JobMetric\Extension\Events\PluginAddEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
 use JobMetric\Extension\Events\PluginEditEvent;
 use JobMetric\Extension\Exceptions\PluginNotFoundException;
+use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
 use JobMetric\Extension\Http\Requests\PluginRequest;
 use JobMetric\Extension\Http\Resources\Fields\FieldResource;
@@ -139,6 +140,13 @@ class Plugin
     public function add(string $extension, string $name, array $fields): array
     {
         $extension_model = ExtensionFacade::get($extension, $name);
+
+        if (!$extension_model->info['multiple']) {
+            $plugin_model = PluginModel::query()->where('extension_id', $extension_model->id)->first();
+            if ($plugin_model) {
+                throw new PluginNotMultipleException($extension, $name);
+            }
+        }
 
         $fields_validation = $this->fieldsValidation($extension_model);
 

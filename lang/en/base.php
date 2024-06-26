@@ -27,6 +27,7 @@ return [
         'extension_dont_have_contract' => 'The :extension/:name extension dont have JobMetric\Extension\Contracts\ExtensionContract contract.',
         'extension_have_some_plugin' => 'The :extension extension have some plugin. Please uninstall the plugin first.',
         'plugin_not_found' => 'The plugin with ID :plugin_id not found.',
+        'plugin_not_multiple' => 'The :extension/:name extension dont have multiple plugin.',
     ],
 
     'messages' => [
