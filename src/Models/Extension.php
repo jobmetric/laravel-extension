@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property string extension
  * @property string name
  * @property array info
+ * @property int plugin_count
  * @property Carbon created_at
  * @property Carbon updated_at
  * @method static ExtensionName(string $extension, string $name)
@@ -71,5 +72,13 @@ class Extension extends Model
             'extension' => $extension,
             'name' => $name
         ]);
+    }
+
+    /**
+     * Get plugin count
+     */
+    public function getPluginCountAttribute(): int
+    {
+        return $this->plugins()->count();
     }
 }

@@ -12,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed info
  * @property mixed created_at
  * @property mixed updated_at
+ * @property mixed plugin_count
+ * @property mixed plugins
  */
 class ExtensionResource extends JsonResource
 {
@@ -29,6 +31,9 @@ class ExtensionResource extends JsonResource
             'info' => $this->info,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'plugin_count' => $this->plugin_count,
+
+            'plugins' => $this->whenLoaded('plugins', PluginResource::collection($this->plugins)),
         ];
     }
 }
