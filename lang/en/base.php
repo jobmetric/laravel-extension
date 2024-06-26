@@ -26,6 +26,7 @@ return [
         'extension_class_name_not_match' => 'The :extension/:name extension class name not match.',
         'extension_dont_have_contract' => 'The :extension/:name extension dont have JobMetric\Extension\Contracts\ExtensionContract contract.',
         'extension_have_some_plugin' => 'The :extension extension have some plugin. Please uninstall the plugin first.',
+        'plugin_not_found' => 'The plugin with ID :plugin_id not found.',
     ],
 
     'messages' => [
