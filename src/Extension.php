@@ -3,6 +3,8 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
 use JobMetric\Extension\Events\ExtensionUninstallEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
@@ -17,6 +19,7 @@ use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
+use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
 class Extension
@@ -36,6 +39,55 @@ class Extension
     public function __construct(Application $app)
     {
         $this->app = $app;
+    }
+
+    /**
+     * Get the specified extension.
+     *
+     * @param array $filter
+     *
+     * @return QueryBuilder
+     */
+    private function query(array $filter = []): QueryBuilder
+    {
+        $fields = ['id', 'extension', 'name', 'info'];
+
+        return QueryBuilder::for(ExtensionModel::class)
+            ->with('plugins')
+            ->allowedFields($fields)
+            ->allowedSorts($fields)
+            ->allowedFilters($fields)
+            ->defaultSort([
+                'extension',
+                'name'
+            ])
+            ->where($filter);
+    }
+
+    /**
+     * Paginate the specified extension.
+     *
+     * @param array $filter
+     * @param int $page_limit
+     *
+     * @return LengthAwarePaginator
+     */
+    public function paginate(array $filter = [], int $page_limit = 15): LengthAwarePaginator
+    {
+        return $this->query($filter)->paginate($page_limit);
+    }
+
+    /**
+     * Get all extensions.
+     *
+     * @param array $filter
+     * @return AnonymousResourceCollection
+     */
+    public function all(array $filter = []): AnonymousResourceCollection
+    {
+        return ExtensionResource::collection(
+            $this->query($filter)->get()
+        );
     }
 
     /**

@@ -73,4 +73,47 @@ class ExtensionTest extends BaseTestCase
         $this->assertInstanceOf(ExtensionResource::class, $extension);
         $this->assertNotInstanceOf(ExtensionModel::class, $extension);
     }
+
+    /**
+     * @throws Throwable
+     */
+    public function testAll(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $extensions = Extension::all();
+
+        $this->assertCount(1, $extensions);
+
+        $extensions->each(function ($extension) {
+            $this->assertInstanceOf(\JobMetric\Extension\Http\Resources\ExtensionResource::class, $extension);
+        });
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function testPaginate(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $extensions = Extension::paginate();
+
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $extensions);
+        $this->assertIsInt($extensions->total());
+        $this->assertIsInt($extensions->perPage());
+        $this->assertIsInt($extensions->currentPage());
+        $this->assertIsInt($extensions->lastPage());
+        $this->assertIsArray($extensions->items());
+    }
 }
