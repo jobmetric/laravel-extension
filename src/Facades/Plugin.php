@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see \JobMetric\Extension\Plugin
  *
- * @method static array add(string $extension, string $name, array $options)
+ * @method static \JobMetric\Extension\Models\Plugin|\JobMetric\Extension\Http\Resources\PluginResource get(int $plugin_id, bool $has_resource = false)
+ * @method static array fields(string $extension, string $name, int $plugin_id = null)
+ * @method static array add(string $extension, string $name, array $fields)
  */
 class Plugin extends Facade
 {

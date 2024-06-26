@@ -43,4 +43,16 @@ return [
         ],
     ],
 
+    'fields' => [
+        'title' => [
+            'label' => 'Title',
+            'info' => 'Enter the name of your plugin.',
+            'placeholder' => 'Enter plugin title.',
+        ],
+        'status' => [
+            'label' => 'Status',
+            'info' => 'Select plugin status for enable or disable.',
+        ]
+    ],
+
 ];

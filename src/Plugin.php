@@ -6,11 +6,13 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Validator;
 use JobMetric\Extension\Events\PluginAddEvent;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
+use JobMetric\Extension\Exceptions\PluginNotFoundException;
+use JobMetric\Extension\Facades\Extension as ExtensionFacade;
 use JobMetric\Extension\Http\Requests\AddPluginRequest;
+use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
-use JobMetric\Location\Http\Requests\StoreCountryRequest;
 use Throwable;
 
 class Plugin
@@ -33,29 +35,113 @@ class Plugin
     }
 
     /**
-     * Add plugin
+     * Get plugins
+     *
+     * @param int $plugin_id
+     * @param bool $has_resource
+     *
+     * @return PluginModel|PluginResource
+     * @throws Throwable
+     */
+    public function get(int $plugin_id, bool $has_resource = false): PluginModel|PluginResource
+    {
+        /**
+         * @var PluginModel $plugin_model
+         */
+        $plugin_model = PluginModel::with('extension')->find($plugin_id);
+
+        if (!$plugin_model) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+
+        if ($has_resource) {
+            return PluginResource::make($plugin_model);
+        }
+
+        return $plugin_model;
+    }
+
+    /**
+     * Get fields
      *
      * @param string $extension
      * @param string $name
-     * @param array $options
+     * @param int|null $plugin_id
      *
      * @return array
      * @throws Throwable
      */
-    public function add(string $extension, string $name, array $options): array
+    public function fields(string $extension, string $name, int $plugin_id = null): array
     {
-        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
+        /**
+         * @var ExtensionModel $extension_model
+         */
+        $extension_model = ExtensionFacade::get($extension, $name);
 
-        if (!$extension_model) {
-            throw new ExtensionNotInstalledException($extension, $name);
+        $fields = collect();
+
+        $plugin_info = null;
+        if ($plugin_id) {
+            $plugin_info = $this->get($plugin_id);
         }
 
-        $fields_validation = [];
-        foreach ($extension_model->info['fields'] ?? [] as $item) {
-            $fields_validation[$item['name']] = $item['validation'];
+        $fields->add([
+            'extension' => $extension,
+            'extension_name' => $name,
+            'name' => 'title',
+            'type' => 'text',
+            'required' => true,
+            'value' => ($plugin_info) ? $plugin_info->title : null,
+        ]);
+
+        $fields->add([
+            'extension' => $extension,
+            'extension_name' => $name,
+            'name' => 'status',
+            'type' => 'boolean',
+            'required' => true,
+            'default' => true,
+            'value' => ($plugin_info) ? $plugin_info->status : null,
+        ]);
+
+        foreach ($extension_model->info['fields'] as $item) {
+            $fields->add(
+                array_merge([
+                    'extension' => $extension,
+                    'extension_name' => $name,
+                    'value' => ($plugin_info) ? $plugin_info->fields[$item['name']] : null,
+                ], $item)
+            );
         }
 
-        $validator = Validator::make($options, (new AddPluginRequest)->setFields($fields_validation)->rules());
+        return $fields->map(function ($item) {
+            $class = 'JobMetric\\Extension\\Http\\Resources\\Fields\\' . ucfirst($item['type']) . 'FieldResource';
+
+            if (class_exists($class)) {
+                return $class::make($item)->toArray(request());
+            }
+
+            return FieldResource::make($item)->toArray(request());
+        })->toArray();
+    }
+
+    /**
+     * Add plugin
+     *
+     * @param string $extension
+     * @param string $name
+     * @param array $fields
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function add(string $extension, string $name, array $fields): array
+    {
+        $extension_model = ExtensionFacade::get($extension, $name);
+
+        $fields_validation = $this->fieldsValidation($extension_model);
+
+        $validator = Validator::make($fields, (new AddPluginRequest)->setFields($fields_validation)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -115,5 +201,22 @@ class Plugin
     {
         // find the object plugin
         // delete plugin
+    }
+
+    /**
+     * Get fields validation
+     *
+     * @param ExtensionModel $extension
+     *
+     * @return array
+     */
+    private function fieldsValidation(ExtensionModel $extension): array
+    {
+        $fields_validation = [];
+        foreach ($extension->info['fields'] ?? [] as $item) {
+            $fields_validation[$item['name']] = $item['validation'];
+        }
+
+        return $fields_validation;
     }
 }

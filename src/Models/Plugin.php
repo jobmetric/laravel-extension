@@ -18,6 +18,7 @@ use JobMetric\PackageCore\Models\HasBooleanStatus;
  * @property bool status
  * @property Carbon created_at
  * @property Carbon updated_at
+ * @method static find(int $plugin_id)
  */
 class Plugin extends Model
 {
