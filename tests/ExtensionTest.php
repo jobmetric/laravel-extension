@@ -4,6 +4,8 @@ namespace JobMetric\Extension\Tests;
 
 use JobMetric\Extension\Exceptions\ExtensionAlreadyInstalledException;
 use JobMetric\Extension\Facades\Extension;
+use JobMetric\Extension\Http\Resources\ExtensionResource;
+use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Tests\BaseDatabaseTestCase as BaseTestCase;
 use Throwable;
 
@@ -47,5 +49,28 @@ class ExtensionTest extends BaseTestCase
             'extension' => 'Addons',
             'name' => 'Banner',
         ]);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function testGet(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $extension = Extension::get('Addons', 'Banner');
+
+        $this->assertInstanceOf(ExtensionModel::class, $extension);
+        $this->assertNotInstanceOf(ExtensionResource::class, $extension);
+
+        $extension = Extension::get('Addons', 'Banner', true);
+
+        $this->assertInstanceOf(ExtensionResource::class, $extension);
+        $this->assertNotInstanceOf(ExtensionModel::class, $extension);
     }
 }

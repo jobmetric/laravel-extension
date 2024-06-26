@@ -15,6 +15,7 @@ use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
+use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Throwable;
 
@@ -35,6 +36,31 @@ class Extension
     public function __construct(Application $app)
     {
         $this->app = $app;
+    }
+
+    /**
+     * Get extensions
+     *
+     * @param string $extension
+     * @param string $name
+     * @param bool $has_resource
+     *
+     * @return ExtensionModel|ExtensionResource
+     * @throws Throwable
+     */
+    public function get(string $extension, string $name, bool $has_resource = false): ExtensionModel|ExtensionResource
+    {
+        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
+
+        if (!$extension_model) {
+            throw new ExtensionNotInstalledException($extension, $name);
+        }
+
+        if ($has_resource) {
+            return ExtensionResource::make($extension_model);
+        }
+
+        return $extension_model;
     }
 
     /**
