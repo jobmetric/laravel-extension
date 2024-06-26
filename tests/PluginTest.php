@@ -98,12 +98,12 @@ class PluginTest extends BaseTestCase
             ]
         ]);
 
-        $plugin_get = Plugin::get($plugin['data']->id);
+        $plugin_get = Plugin::getInfo($plugin['data']->id);
 
         $this->assertInstanceOf(PluginModel::class, $plugin_get);
         $this->assertNotInstanceOf(PluginResource::class, $plugin_get);
 
-        $plugin_get = Plugin::get($plugin['data']->id, true);
+        $plugin_get = Plugin::getInfo($plugin['data']->id, true);
 
         $this->assertInstanceOf(PluginResource::class, $plugin_get);
         $this->assertNotInstanceOf(PluginModel::class, $plugin_get);

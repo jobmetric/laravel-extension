@@ -39,7 +39,7 @@ class Extension
     }
 
     /**
-     * Get extensions
+     * Get extension info.
      *
      * @param string $extension
      * @param string $name
@@ -48,7 +48,7 @@ class Extension
      * @return ExtensionModel|ExtensionResource
      * @throws Throwable
      */
-    public function get(string $extension, string $name, bool $has_resource = false): ExtensionModel|ExtensionResource
+    public function getInfo(string $extension, string $name, bool $has_resource = false): ExtensionModel|ExtensionResource
     {
         $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
 

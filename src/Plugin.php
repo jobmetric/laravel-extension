@@ -37,7 +37,7 @@ class Plugin
     }
 
     /**
-     * Get plugins
+     * Get plugin info.
      *
      * @param int $plugin_id
      * @param bool $has_resource
@@ -45,7 +45,7 @@ class Plugin
      * @return PluginModel|PluginResource
      * @throws Throwable
      */
-    public function get(int $plugin_id, bool $has_resource = false): PluginModel|PluginResource
+    public function getInfo(int $plugin_id, bool $has_resource = false): PluginModel|PluginResource
     {
         /**
          * @var PluginModel $plugin_model
@@ -78,13 +78,13 @@ class Plugin
         /**
          * @var ExtensionModel $extension_model
          */
-        $extension_model = ExtensionFacade::get($extension, $name);
+        $extension_model = ExtensionFacade::getInfo($extension, $name);
 
         $fields = collect();
 
         $plugin_info = null;
         if ($plugin_id) {
-            $plugin_info = $this->get($plugin_id);
+            $plugin_info = $this->getInfo($plugin_id);
         }
 
         $fields->add([
@@ -139,7 +139,7 @@ class Plugin
      */
     public function add(string $extension, string $name, array $fields): array
     {
-        $extension_model = ExtensionFacade::get($extension, $name);
+        $extension_model = ExtensionFacade::getInfo($extension, $name);
 
         if (!$extension_model->info['multiple']) {
             $plugin_model = PluginModel::query()->where('extension_id', $extension_model->id)->first();
@@ -194,7 +194,7 @@ class Plugin
      */
     public function edit(int $plugin_id, array $fields): array
     {
-        $plugin_model = $this->get($plugin_id);
+        $plugin_model = $this->getInfo($plugin_id);
 
         $fields_validation = $this->fieldsValidation($plugin_model->extension);
 
@@ -239,7 +239,7 @@ class Plugin
      */
     public function delete(int $plugin_id): array
     {
-        $plugin_model = $this->get($plugin_id);
+        $plugin_model = $this->getInfo($plugin_id);
 
         $data = PluginResource::make($plugin_model);
 

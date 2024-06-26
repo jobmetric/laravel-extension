@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see \JobMetric\Extension\Extension
  *
- * @method static \JobMetric\Extension\Models\Extension|\JobMetric\Extension\Http\Resources\ExtensionResource get(string $extension, string $name, bool $has_resource = false)
+ * @method static \JobMetric\Extension\Models\Extension|\JobMetric\Extension\Http\Resources\ExtensionResource getInfo(string $extension, string $name, bool $has_resource = false)
  * @method static void install(string $extension, string $name)
  * @method static void uninstall(string $extension, string $name, bool $force_delete_plugin = false)
  * @method static void update(string $extension, string $name)

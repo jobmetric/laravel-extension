@@ -54,7 +54,7 @@ class ExtensionTest extends BaseTestCase
     /**
      * @throws Throwable
      */
-    public function testGet(): void
+    public function testGetInfo(): void
     {
         Extension::install('Addons', 'Banner');
 
@@ -63,12 +63,12 @@ class ExtensionTest extends BaseTestCase
             'name' => 'Banner',
         ]);
 
-        $extension = Extension::get('Addons', 'Banner');
+        $extension = Extension::getInfo('Addons', 'Banner');
 
         $this->assertInstanceOf(ExtensionModel::class, $extension);
         $this->assertNotInstanceOf(ExtensionResource::class, $extension);
 
-        $extension = Extension::get('Addons', 'Banner', true);
+        $extension = Extension::getInfo('Addons', 'Banner', true);
 
         $this->assertInstanceOf(ExtensionResource::class, $extension);
         $this->assertNotInstanceOf(ExtensionModel::class, $extension);
