@@ -5,6 +5,7 @@ namespace JobMetric\Extension;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Validator;
 use JobMetric\Extension\Events\PluginAddEvent;
+use JobMetric\Extension\Events\PluginDeleteEvent;
 use JobMetric\Extension\Events\PluginEditEvent;
 use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
@@ -223,14 +224,27 @@ class Plugin
     /**
      * Delete plugin
      *
-     * @param int $plugin_id
+     * @param int $plugin_id Plugin ID to delete
      *
-     * @return void
+     * @return array
+     * @throws Throwable
      */
-    public function delete(int $plugin_id): void
+    public function delete(int $plugin_id): array
     {
-        // find the object plugin
-        // delete plugin
+        $plugin_model = $this->get($plugin_id);
+
+        $data = PluginResource::make($plugin_model);
+
+        event(new PluginDeleteEvent($plugin_model));
+
+        $plugin_model->delete();
+
+        return [
+            'ok' => true,
+            'message' => trans('extension::base.messages.plugin.deleted'),
+            'data' => $data,
+            'status' => 200
+        ];
     }
 
     /**

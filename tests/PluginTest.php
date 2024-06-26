@@ -292,4 +292,34 @@ class PluginTest extends BaseTestCase
         $this->assertInstanceOf(PluginResource::class, $plugin_edit['data']);
         $this->assertEquals(200, $plugin_edit['status']);
     }
+
+    /**
+     * @throws Throwable
+     */
+    public function testDelete(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $plugin = Plugin::add('Addons', 'Banner', [
+            'title' => 'sample title',
+            'status' => true,
+            'fields' => [
+                'width' => '100',
+                'height' => '100',
+            ]
+        ]);
+
+        $plugin_delete = Plugin::delete($plugin['data']->id);
+
+        $this->assertIsArray($plugin_delete);
+        $this->assertTrue($plugin_delete['ok']);
+        $this->assertEquals($plugin_delete['message'], trans('extension::base.messages.plugin.deleted'));
+        $this->assertInstanceOf(PluginResource::class, $plugin_delete['data']);
+        $this->assertEquals(200, $plugin_delete['status']);
+    }
 }
