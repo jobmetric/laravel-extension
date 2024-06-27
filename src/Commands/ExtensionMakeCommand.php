@@ -96,6 +96,12 @@ class ExtensionMakeCommand extends Command
         $this->message('Extension <options=bold>[' . $extension . '/' . $name . '/extension.json]</> created successfully.', 'success');
 
         // make lang
+        $path = base_path('app/Extensions/' . $extension . '/' . $name . '/lang/en');
+
+        if (!$this->isDir($path)) {
+            $this->makeDir($path);
+        }
+
         $content_lang = $this->getStub(__DIR__ . '/stub/lang', [
             'extension' => $extension,
             'name' => $name,
