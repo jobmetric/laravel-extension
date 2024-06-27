@@ -51,7 +51,7 @@ class Extension
      */
     private function query(array $filter = [], array $with = []): QueryBuilder
     {
-        $fields = ['id', 'extension', 'name', 'info'];
+        $fields = ['id', 'extension', 'name', 'info', 'created_at', 'updated_at'];
 
         $query = QueryBuilder::for(ExtensionModel::class)
             ->allowedFields($fields)
@@ -245,6 +245,22 @@ class Extension
     {
         // check the version in extension.json local and remote repository
         // if the local version is lower than the remote version then run $this->download($path)
+    }
+
+    /**
+     * Check extension is updated from remote repository
+     *
+     * @param string $extension
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isUpdated(string $extension, string $name): bool
+    {
+        // check the version in extension.json local and remote repository
+        // if the local version is lower than the remote version then return false
+        // else return true
+        return true;
     }
 
     /**

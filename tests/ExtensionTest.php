@@ -2,6 +2,7 @@
 
 namespace JobMetric\Extension\Tests;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use JobMetric\Extension\Exceptions\ExtensionAlreadyInstalledException;
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
@@ -91,7 +92,7 @@ class ExtensionTest extends BaseTestCase
         $this->assertCount(1, $extensions);
 
         $extensions->each(function ($extension) {
-            $this->assertInstanceOf(\JobMetric\Extension\Http\Resources\ExtensionResource::class, $extension);
+            $this->assertInstanceOf(ExtensionResource::class, $extension);
         });
     }
 
@@ -109,7 +110,7 @@ class ExtensionTest extends BaseTestCase
 
         $extensions = Extension::paginate();
 
-        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $extensions);
+        $this->assertInstanceOf(LengthAwarePaginator::class, $extensions);
         $this->assertIsInt($extensions->total());
         $this->assertIsInt($extensions->perPage());
         $this->assertIsInt($extensions->currentPage());
