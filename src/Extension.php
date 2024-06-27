@@ -45,15 +45,15 @@ class Extension
      * Get the specified extension.
      *
      * @param array $filter
+     * @param array $with
      *
      * @return QueryBuilder
      */
-    private function query(array $filter = []): QueryBuilder
+    private function query(array $filter = [], array $with = []): QueryBuilder
     {
         $fields = ['id', 'extension', 'name', 'info'];
 
-        return QueryBuilder::for(ExtensionModel::class)
-            ->with('plugins')
+        $query = QueryBuilder::for(ExtensionModel::class)
             ->allowedFields($fields)
             ->allowedSorts($fields)
             ->allowedFilters($fields)
@@ -62,6 +62,12 @@ class Extension
                 'name'
             ])
             ->where($filter);
+
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
+        return $query;
     }
 
     /**
@@ -69,24 +75,27 @@ class Extension
      *
      * @param array $filter
      * @param int $page_limit
+     * @param array $with
      *
      * @return LengthAwarePaginator
      */
-    public function paginate(array $filter = [], int $page_limit = 15): LengthAwarePaginator
+    public function paginate(array $filter = [], int $page_limit = 15, array $with = []): LengthAwarePaginator
     {
-        return $this->query($filter)->paginate($page_limit);
+        return $this->query($filter, $with)->paginate($page_limit);
     }
 
     /**
      * Get all extensions.
      *
      * @param array $filter
+     * @param array $with
+     *
      * @return AnonymousResourceCollection
      */
-    public function all(array $filter = []): AnonymousResourceCollection
+    public function all(array $filter = [], array $with = []): AnonymousResourceCollection
     {
         return ExtensionResource::collection(
-            $this->query($filter)->get()
+            $this->query($filter, $with)->get()
         );
     }
 
