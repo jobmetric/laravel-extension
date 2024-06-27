@@ -1,0 +1,24 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | {{extension}}/{{name}} Language Lines
+    |--------------------------------------------------------------------------
+    |
+    | The following language lines are used during {{extension}}/{{name}} for
+    | various messages that we need to display to the user.
+    |
+    */
+
+    'name' => '{{name}}',
+
+    'fields' => [
+        'sample' => [
+            'label' => '',
+            'info' => '',
+            'placeholder' => '',
+        ],
+    ],
+];

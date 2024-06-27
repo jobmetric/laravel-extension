@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Extensions\{{extension}}\{{name}};
+
+use JobMetric\Extension\Contracts\ExtensionContract;
+
+class {{name}} implements ExtensionContract
+{
+    /**
+     * Handle the extension.
+     *
+     * @param array $options
+     *
+     * @return string
+     */
+    public function handle(array $options = []): string
+    {
+        return 'Handle the extension';
+    }
+
+    /**
+     * Install the extension.
+     *
+     * @return void
+     */
+    public static function install(): void
+    {
+        //
+    }
+
+    /**
+     * Uninstall the extension.
+     *
+     * @return void
+     */
+    public static function uninstall(): void
+    {
+        //
+    }
+}

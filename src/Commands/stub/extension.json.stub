@@ -1,0 +1,15 @@
+{
+    "extension": "{{extension}}",
+    "name": "{{name}}",
+    "version": "1.0.0",
+    "multiple": {{multiple}},
+    "title": "",
+    "description": "",
+    "author": "",
+    "email": "",
+    "website": "",
+    "creationDate": "{{date}}",
+    "copyright": "Copyright (c) 2021",
+    "license": "MIT",
+    "fields": []
+}
