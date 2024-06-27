@@ -28,8 +28,8 @@ class FieldResource extends JsonResource
             'type' => $this['type'],
             'required' => $this['required'] ?? false,
             'default' => $this['default'] ?? null,
-            'label' => trans("extension::base.fields.{$this['name']}.label") ?? trans("extension::{$this['extension']}.{$this['extension_name']}.fields.{$this['name']}.label") ?? $this['label'] ?? $this['name'],
-            'info' => trans("extension::base.fields.{$this['name']}.info") ?? trans("extension::{$this['extension']}.{$this['extension_name']}.fields.{$this['name']}.info") ?? $this['info'] ?? $this['name'],
+            'label' => trans("extension::base.fields.{$this['name']}.label") ?? trans("extension_{$this['extension']}_{$this['extension_name']}::extension.fields.{$this['name']}.label") ?? $this['label'] ?? $this['name'],
+            'info' => trans("extension::base.fields.{$this['name']}.info") ?? trans("extension_{$this['extension']}_{$this['extension_name']}::extension.fields.{$this['name']}.info") ?? $this['info'] ?? $this['name'],
         ];
     }
 }

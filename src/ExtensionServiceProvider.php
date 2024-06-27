@@ -33,8 +33,29 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
     public function afterBootPackage(): void
     {
         if (checkDatabaseConnection() && !app()->runningInConsole() && !app()->runningUnitTests()) {
-            // get all active extensions
-            // loops through each extension for load language files
+            $this->loadAddPlugin();
+        }
+    }
+
+    private function loadAddPlugin(): void
+    {
+        $extensionPath = app_path('Extensions');
+
+        $extensions = array_diff(scandir($extensionPath), ['..', '.']);
+
+        foreach ($extensions as $extension) {
+            $modules = array_diff(scandir($extensionPath . '/' . $extension), ['..', '.']);
+            foreach ($modules as $module) {
+                $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/' . app()->getLocale() . '/extension.php';
+
+                if (!file_exists($langFile)) {
+                    $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/en/extension.php';
+                }
+
+                if(file_exists($langFile)) {
+                    $this->loadTranslationsFrom($extensionPath . '/' . $extension . '/' . $module . '/lang', 'extension_'.$extension.'_'.$module);
+                }
+            }
         }
     }
 }

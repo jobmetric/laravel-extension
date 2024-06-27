@@ -21,7 +21,7 @@ class NumberFieldResource extends FieldResource
     public function toArray(Request $request): array
     {
         return array_merge($this->common(), [
-            'placeholder' => trans("extension::base.fields.{$this['name']}.placeholder") ?? trans("extension::{$this['extension']}.{$this['extension_name']}.fields.{$this['name']}.placeholder") ?? $this['name'],
+            'placeholder' => trans("extension::base.fields.{$this['name']}.placeholder") ?? trans("extension_{$this['extension']}_{$this['extension_name']}::extension.fields.{$this['name']}.placeholder") ?? $this['name'],
             'value' => $this['value'] ?? null,
         ]);
     }
