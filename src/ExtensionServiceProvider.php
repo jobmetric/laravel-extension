@@ -27,4 +27,12 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerClass('Plugin', Plugin::class)
             ->registerClass('Extension', Extension::class);
     }
+
+    public function afterBootPackage(): void
+    {
+        if (checkDatabaseConnection() && !app()->runningInConsole() && !app()->runningUnitTests()) {
+            // get all active extensions
+            // loops through each extension for load language files
+        }
+    }
 }
