@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see \JobMetric\Extension\Plugin
  *
+ * @method static \Spatie\QueryBuilder\QueryBuilder query(array $filter = [], array $with = [])
+ * @method static \Illuminate\Pagination\LengthAwarePaginator paginate(array $filter = [], int $page_limit = 15, array $with = [])
+ * @method static \Illuminate\Http\Resources\Json\AnonymousResourceCollection all(array $filter = [], array $with = [])
  * @method static \JobMetric\Extension\Models\Plugin|\JobMetric\Extension\Http\Resources\PluginResource getInfo(int $plugin_id, bool $has_resource = false)
  * @method static array fields(string $extension, string $name, int $plugin_id = null)
  * @method static array add(string $extension, string $name, array $fields)

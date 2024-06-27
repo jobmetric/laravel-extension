@@ -3,6 +3,8 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
 use JobMetric\Extension\Events\PluginAddEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
@@ -15,6 +17,7 @@ use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
 class Plugin
@@ -34,6 +37,63 @@ class Plugin
     public function __construct(Application $app)
     {
         $this->app = $app;
+    }
+
+    /**
+     * Get the specified plugin.
+     *
+     * @param array $filter
+     * @param array $with
+     *
+     * @return QueryBuilder
+     */
+    private function query(array $filter = [], array $with = []): QueryBuilder
+    {
+        $fields = ['id', 'extension_id', 'title', 'fields', 'status', 'created_at', 'updated_at'];
+
+        $query = QueryBuilder::for(PluginModel::class)
+            ->allowedFields($fields)
+            ->allowedSorts($fields)
+            ->allowedFilters($fields)
+            ->defaultSort([
+                'title'
+            ])
+            ->where($filter);
+
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Paginate the specified plugin.
+     *
+     * @param array $filter
+     * @param int $page_limit
+     * @param array $with
+     *
+     * @return LengthAwarePaginator
+     */
+    public function paginate(array $filter = [], int $page_limit = 15, array $with = []): LengthAwarePaginator
+    {
+        return $this->query($filter, $with)->paginate($page_limit);
+    }
+
+    /**
+     * Get all plugins.
+     *
+     * @param array $filter
+     * @param array $with
+     *
+     * @return AnonymousResourceCollection
+     */
+    public function all(array $filter = [], array $with = []): AnonymousResourceCollection
+    {
+        return PluginResource::collection(
+            $this->query($filter, $with)->get()
+        );
     }
 
     /**

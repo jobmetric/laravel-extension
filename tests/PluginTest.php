@@ -2,6 +2,7 @@
 
 namespace JobMetric\Extension\Tests;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension;
@@ -342,5 +343,66 @@ class PluginTest extends BaseTestCase
         $this->assertEquals($plugin_delete['message'], trans('extension::base.messages.plugin.deleted'));
         $this->assertInstanceOf(PluginResource::class, $plugin_delete['data']);
         $this->assertEquals(200, $plugin_delete['status']);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function testAll(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $plugin = Plugin::add('Addons', 'Banner', [
+            'title' => 'sample title',
+            'status' => true,
+            'fields' => [
+                'width' => '100',
+                'height' => '100',
+            ]
+        ]);
+
+        $plugins = Plugin::all();
+
+        $this->assertCount(1, $plugins);
+
+        $plugins->each(function ($plugin) {
+            $this->assertInstanceOf(PluginResource::class, $plugin);
+        });
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function testPaginate(): void
+    {
+        Extension::install('Addons', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Addons',
+            'name' => 'Banner',
+        ]);
+
+        $plugin = Plugin::add('Addons', 'Banner', [
+            'title' => 'sample title',
+            'status' => true,
+            'fields' => [
+                'width' => '100',
+                'height' => '100',
+            ]
+        ]);
+
+        $plugins = Plugin::paginate();
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $plugins);
+        $this->assertIsInt($plugins->total());
+        $this->assertIsInt($plugins->perPage());
+        $this->assertIsInt($plugins->currentPage());
+        $this->assertIsInt($plugins->lastPage());
+        $this->assertIsArray($plugins->items());
     }
 }
