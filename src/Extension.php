@@ -5,6 +5,7 @@ namespace JobMetric\Extension;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use JobMetric\Extension\Enums\ExtensionTypeEnum;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
 use JobMetric\Extension\Events\ExtensionUninstallEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
@@ -17,6 +18,7 @@ use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionTypeInvalidException;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -130,11 +132,15 @@ class Extension
      * @param string $extension
      * @param string $name
      *
-     * @return void
+     * @return array
      * @throws Throwable
      */
-    public function install(string $extension, string $name): void
+    public function install(string $extension, string $name): array
     {
+        if (!in_array($extension, ExtensionTypeEnum::values())) {
+            throw new ExtensionTypeInvalidException($extension, $name);
+        }
+
         if (ExtensionModel::ExtensionName($extension, $name)->exists()) {
             throw new ExtensionAlreadyInstalledException($extension, $name);
         }
@@ -190,6 +196,16 @@ class Extension
         $extension_model->save();
 
         event(new ExtensionInstallEvent($extension_model));
+
+        return [
+            'ok' => true,
+            'message' => trans('extension::base.messages.extension.installed', [
+                'extension' => $extension,
+                'name' => $name
+            ]),
+            'data' => ExtensionResource::make($extension_model),
+            'status' => 200
+        ];
     }
 
     /**
@@ -199,18 +215,20 @@ class Extension
      * @param string $name
      * @param bool $force_delete_plugin
      *
-     * @return void
+     * @return array
      * @throws Throwable
      */
-    public function uninstall(string $extension, string $name, bool $force_delete_plugin = false): void
+    public function uninstall(string $extension, string $name, bool $force_delete_plugin = false): array
     {
         $app_namespace = appNamespace();
 
-        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first()->load('plugins');
+        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
 
         if (!$extension_model) {
             throw new ExtensionNotInstalledException($extension, $name);
         }
+
+        $extension_model->load('plugins');
 
         if (!$force_delete_plugin && $extension_model->plugins->count() > 0) {
             throw new ExtensionHaveSomePluginException($extension, $name);
@@ -222,6 +240,8 @@ class Extension
             $namespace::uninstall();
         }
 
+        $data = ExtensionResource::make($extension_model);
+
         $extension_model->plugins()->get()->each(function ($plugin) {
             event(new PluginDeleteEvent($plugin));
 
@@ -231,6 +251,16 @@ class Extension
         $extension_model->delete();
 
         event(new ExtensionUninstallEvent($extension_model));
+
+        return [
+            'ok' => true,
+            'message' => trans('extension::base.messages.extension.uninstalled', [
+                'extension' => $extension,
+                'name' => $name
+            ]),
+            'data' => $data,
+            'status' => 200
+        ];
     }
 
     /**
@@ -239,12 +269,13 @@ class Extension
      * @param string $extension
      * @param string $name
      *
-     * @return void
+     * @return array
      */
-    public function update(string $extension, string $name): void
+    public function update(string $extension, string $name): array
     {
         // check the version in extension.json local and remote repository
         // if the local version is lower than the remote version then run $this->download($path)
+        return [];
     }
 
     /**

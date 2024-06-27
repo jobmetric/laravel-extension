@@ -19,14 +19,14 @@ class PluginTest extends BaseTestCase
      */
     public function testAdd(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => true,
             'fields' => [
@@ -59,7 +59,7 @@ class PluginTest extends BaseTestCase
 
         // Test if plugin is not multiple
         try {
-            $plugin = Plugin::add('Addons', 'Banner', [
+            $plugin = Plugin::add('Module', 'Banner', [
                 'title' => 'sample title',
                 'status' => true,
                 'fields' => [
@@ -83,14 +83,14 @@ class PluginTest extends BaseTestCase
      */
     public function testGet(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => 1,
             'fields' => [
@@ -115,14 +115,14 @@ class PluginTest extends BaseTestCase
      */
     public function testFields(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => 1,
             'fields' => [
@@ -132,7 +132,7 @@ class PluginTest extends BaseTestCase
         ]);
 
         // edit plugin
-        $plugin_fields = Plugin::fields('Addons', 'Banner', $plugin['data']->id);
+        $plugin_fields = Plugin::fields('Module', 'Banner', $plugin['data']->id);
 
         $this->assertIsArray($plugin_fields);
 
@@ -197,7 +197,7 @@ class PluginTest extends BaseTestCase
         $this->assertEquals(100, $plugin_fields[3]['value']);
 
         // add plugin
-        $plugin_fields = Plugin::fields('Addons', 'Banner');
+        $plugin_fields = Plugin::fields('Module', 'Banner');
 
         $this->assertIsArray($plugin_fields);
 
@@ -267,14 +267,14 @@ class PluginTest extends BaseTestCase
      */
     public function testEdit(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => true,
             'fields' => [
@@ -320,14 +320,14 @@ class PluginTest extends BaseTestCase
      */
     public function testDelete(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => true,
             'fields' => [
@@ -350,14 +350,14 @@ class PluginTest extends BaseTestCase
      */
     public function testAll(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => true,
             'fields' => [
@@ -380,14 +380,14 @@ class PluginTest extends BaseTestCase
      */
     public function testPaginate(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $plugin = Plugin::add('Addons', 'Banner', [
+        $plugin = Plugin::add('Module', 'Banner', [
             'title' => 'sample title',
             'status' => true,
             'fields' => [

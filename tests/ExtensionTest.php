@@ -17,16 +17,23 @@ class ExtensionTest extends BaseTestCase
      */
     public function testInstall(): void
     {
-        Extension::install('Addons', 'Banner');
+        $extension = Extension::install('Module', 'Banner');
+
+        $this->assertIsArray($extension);
+        $this->assertArrayHasKey('message', $extension);
+        $this->assertArrayHasKey('data', $extension);
+        $this->assertArrayHasKey('status', $extension);
+        $this->assertInstanceOf(ExtensionResource::class, $extension['data']);
+        $this->assertEquals(200, $extension['status']);
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
         // check if the extension is already installed
         try {
-            Extension::install('Addons', 'Banner');
+            Extension::install('Module', 'Banner');
         } catch (Throwable $e) {
             $this->assertInstanceOf(ExtensionAlreadyInstalledException::class, $e);
         }
@@ -37,17 +44,17 @@ class ExtensionTest extends BaseTestCase
      */
     public function testUninstall(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        Extension::uninstall('Addons', 'Banner', true);
+        Extension::uninstall('Module', 'Banner', true);
 
         $this->assertDatabaseMissing('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
     }
@@ -57,19 +64,19 @@ class ExtensionTest extends BaseTestCase
      */
     public function testGetInfo(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
-        $extension = Extension::getInfo('Addons', 'Banner');
+        $extension = Extension::getInfo('Module', 'Banner');
 
         $this->assertInstanceOf(ExtensionModel::class, $extension);
         $this->assertNotInstanceOf(ExtensionResource::class, $extension);
 
-        $extension = Extension::getInfo('Addons', 'Banner', true);
+        $extension = Extension::getInfo('Module', 'Banner', true);
 
         $this->assertInstanceOf(ExtensionResource::class, $extension);
         $this->assertNotInstanceOf(ExtensionModel::class, $extension);
@@ -80,10 +87,10 @@ class ExtensionTest extends BaseTestCase
      */
     public function testAll(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
@@ -101,10 +108,10 @@ class ExtensionTest extends BaseTestCase
      */
     public function testPaginate(): void
     {
-        Extension::install('Addons', 'Banner');
+        Extension::install('Module', 'Banner');
 
         $this->assertDatabaseHas('extensions', [
-            'extension' => 'Addons',
+            'extension' => 'Module',
             'name' => 'Banner',
         ]);
 
