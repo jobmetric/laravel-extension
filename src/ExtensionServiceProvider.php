@@ -24,6 +24,8 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->hasMigration()
             ->hasTranslation()
             ->registerCommand(Commands\ExtensionMakeCommand::class)
+            ->registerCommand(Commands\ExtensionInstallCommand::class)
+            ->registerCommand(Commands\ExtensionUninstallCommand::class)
             ->registerClass('Plugin', Plugin::class)
             ->registerClass('Extension', Extension::class);
     }
