@@ -222,13 +222,11 @@ class Extension
     {
         $app_namespace = appNamespace();
 
-        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
+        $extension_model = ExtensionModel::ExtensionName($extension, $name)->with('plugins')->first();
 
         if (!$extension_model) {
             throw new ExtensionNotInstalledException($extension, $name);
         }
-
-        $extension_model->load('plugins');
 
         if (!$force_delete_plugin && $extension_model->plugins->count() > 0) {
             throw new ExtensionHaveSomePluginException($extension, $name);
