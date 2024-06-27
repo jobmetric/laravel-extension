@@ -107,9 +107,9 @@ class ExtensionMakeCommand extends Command
             'name' => $name,
         ]);
 
-        $this->putFile($path . '/lang.php', $content_lang);
+        $this->putFile($path . '/extension.php', $content_lang);
 
-        $this->message('Extension <options=bold>[' . $extension . '/' . $name . '/lang.php]</> created successfully.', 'success');
+        $this->message('Extension <options=bold>[' . $extension . '/' . $name . '/lang/en/extension.php]</> created successfully.', 'success');
 
         return 0;
     }
