@@ -38,7 +38,11 @@
         "laravel": {
             "providers": [
                 "JobMetric\\Extension\\ExtensionServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Extension": "JobMetric\\Extension\\Facades\\Extension",
+                "Plugin": "JobMetric\\Extension\\Facades\\Plugin"
+            }
         }
     },
     "minimum-stability": "stable",
