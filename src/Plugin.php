@@ -316,6 +316,35 @@ class Plugin
     }
 
     /**
+     * Run plugin
+     *
+     * @param int $plugin_id
+     *
+     * @return string|null
+     * @throws Throwable
+     */
+    public function run(int $plugin_id): ?string
+    {
+        $plugin_model = $this->getInfo($plugin_id);
+
+        if (!$plugin_model->status) {
+            return null;
+        }
+
+        $extension_model = $plugin_model->extension;
+
+        $class = '\\App\\Extensions\\' . $extension_model->extension . '\\' . $extension_model->name . '\\' . $extension_model->name;
+
+        if (class_exists($class)) {
+            $plugin = new $class();
+
+            return $plugin->handle($plugin_model->fields);
+        }
+
+        return null;
+    }
+
+    /**
      * Get fields validation
      *
      * @param ExtensionModel $extension
@@ -326,7 +355,7 @@ class Plugin
     {
         $fields_validation = [];
         foreach ($extension->info['fields'] ?? [] as $item) {
-            $fields_validation[$item['name']] = $item['validation'];
+            $fields_validation[$item['name']] = $item['validation'] ?? [];
         }
 
         return $fields_validation;

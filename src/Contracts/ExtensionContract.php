@@ -9,7 +9,7 @@ interface ExtensionContract
      *
      * @param array $options
      *
-     * @return string
+     * @return string|null
      */
-    public function handle(array $options = []): string;
+    public function handle(array $options = []): ?string;
 }

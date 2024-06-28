@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array add(string $extension, string $name, array $fields)
  * @method static array edit(int $plugin_id, array $fields)
  * @method static array delete(int $plugin_id)
+ * @method static string|null run(int $plugin_id)
  */
 class Plugin extends Facade
 {

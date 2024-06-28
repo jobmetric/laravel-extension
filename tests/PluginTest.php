@@ -405,4 +405,30 @@ class PluginTest extends BaseTestCase
         $this->assertIsInt($plugins->lastPage());
         $this->assertIsArray($plugins->items());
     }
+
+    /**
+     * @throws Throwable
+     */
+    public function testRun(): void
+    {
+        Extension::install('Module', 'Banner');
+
+        $this->assertDatabaseHas('extensions', [
+            'extension' => 'Module',
+            'name' => 'Banner',
+        ]);
+
+        $plugin = Plugin::add('Module', 'Banner', [
+            'title' => 'sample title',
+            'status' => true,
+            'fields' => [
+                'width' => '100',
+                'height' => '100',
+            ]
+        ]);
+
+        $plugin_run = Plugin::run($plugin['data']->id);
+
+        $this->assertEquals('Handle the extension', $plugin_run);
+    }
 }

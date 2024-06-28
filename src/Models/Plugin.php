@@ -12,6 +12,7 @@ use JobMetric\PackageCore\Models\HasBooleanStatus;
  * JobMetric\Extension\Models\Extension
  *
  * @property int id
+ * @property Extension extension
  * @property string extension_id
  * @property string title
  * @property string fields
