@@ -39,3 +39,5 @@ $plugin = \JobMetric\Extension\Facades\Plugin::run($plugin_id);
 ```
 
 > If the desired plugin has no output, the `null` value will be returned.
+
+- [Next To Helper Function](https://github.com/jobmetric/laravel-extension/blob/master/docs/helper.md)

@@ -44,6 +44,7 @@ This package includes different parts that I will mention in order:
 - [Extension](https://github.com/jobmetric/laravel-extension/blob/master/docs/extension.md)
 - [Fields of Extension](https://github.com/jobmetric/laravel-extension/blob/master/docs/fields.md)
 - [Plugin](https://github.com/jobmetric/laravel-extension/blob/master/docs/plugin.md)
+- [Helper Function](https://github.com/jobmetric/laravel-extension/blob/master/docs/helper.md)
 
 ## Contributing
 
