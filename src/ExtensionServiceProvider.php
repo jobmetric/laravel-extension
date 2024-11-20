@@ -40,20 +40,21 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
     private function loadAddPlugin(): void
     {
         $extensionPath = app_path('Extensions');
+        if (is_dir($extensionPath)) {
+            $extensions = array_diff(scandir($extensionPath), ['..', '.']);
 
-        $extensions = array_diff(scandir($extensionPath), ['..', '.']);
+            foreach ($extensions as $extension) {
+                $modules = array_diff(scandir($extensionPath . '/' . $extension), ['..', '.']);
+                foreach ($modules as $module) {
+                    $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/' . app()->getLocale() . '/extension.php';
 
-        foreach ($extensions as $extension) {
-            $modules = array_diff(scandir($extensionPath . '/' . $extension), ['..', '.']);
-            foreach ($modules as $module) {
-                $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/' . app()->getLocale() . '/extension.php';
+                    if (!file_exists($langFile)) {
+                        $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/en/extension.php';
+                    }
 
-                if (!file_exists($langFile)) {
-                    $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/en/extension.php';
-                }
-
-                if(file_exists($langFile)) {
-                    $this->loadTranslationsFrom($extensionPath . '/' . $extension . '/' . $module . '/lang', 'extension_'.$extension.'_'.$module);
+                    if(file_exists($langFile)) {
+                        $this->loadTranslationsFrom($extensionPath . '/' . $extension . '/' . $module . '/lang', 'extension_'.$extension.'_'.$module);
+                    }
                 }
             }
         }
