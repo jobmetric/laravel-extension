@@ -27,7 +27,8 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerCommand(Commands\ExtensionInstallCommand::class)
             ->registerCommand(Commands\ExtensionUninstallCommand::class)
             ->registerClass('Plugin', Plugin::class)
-            ->registerClass('Extension', Extension::class);
+            ->registerClass('Extension', Extension::class)
+            ->registerClass('ExtensionType', ExtensionType::class);
     }
 
     public function afterBootPackage(): void
