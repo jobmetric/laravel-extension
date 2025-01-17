@@ -5,6 +5,8 @@ namespace JobMetric\Extension;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use JobMetric\Extension\Enums\ExtensionTypeEnum;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
 use JobMetric\Extension\Events\ExtensionUninstallEvent;
@@ -19,8 +21,10 @@ use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionTypeInvalidException;
+use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
+use JobMetric\Taxonomy\Http\Resources\TaxonomyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
@@ -46,16 +50,23 @@ class Extension
     /**
      * Get the specified extension.
      *
+     * @param string $extension
      * @param array $filter
      * @param array $with
      *
      * @return QueryBuilder
      */
-    private function query(array $filter = [], array $with = []): QueryBuilder
+    private function query(string $extension, array $filter = [], array $with = []): QueryBuilder
     {
         $fields = ['id', 'extension', 'name', 'info', 'created_at', 'updated_at'];
 
         $query = QueryBuilder::for(ExtensionModel::class)
+            ->select($fields)
+            ->selectSub(function ($query) {
+                $query->from(config('extension.tables.plugin'))
+                    ->selectRaw('count(*)')
+                    ->whereColumn('extension_id', 'extensions.id');
+            }, 'plugin_count')
             ->allowedFields($fields)
             ->allowedSorts($fields)
             ->allowedFilters($fields)
@@ -65,6 +76,8 @@ class Extension
             ])
             ->where($filter);
 
+        $query->where('extension', $extension);
+
         if (!empty($with)) {
             $query->with($with);
         }
@@ -73,32 +86,31 @@ class Extension
     }
 
     /**
-     * Paginate the specified extension.
-     *
-     * @param array $filter
-     * @param int $page_limit
-     * @param array $with
-     *
-     * @return LengthAwarePaginator
-     */
-    public function paginate(array $filter = [], int $page_limit = 15, array $with = []): LengthAwarePaginator
-    {
-        return $this->query($filter, $with)->paginate($page_limit);
-    }
-
-    /**
      * Get all extensions.
      *
+     * @param string $type
      * @param array $filter
      * @param array $with
      *
      * @return AnonymousResourceCollection
      */
-    public function all(array $filter = [], array $with = []): AnonymousResourceCollection
+    public function all(string $type, array $filter = [], array $with = []): AnonymousResourceCollection
     {
-        return ExtensionResource::collection(
-            $this->query($filter, $with)->get()
-        );
+        $database_extensions = $this->query(Str::studly($type), $filter, $with)->get();
+
+        $extensions = $this->getExtensionWithType($type);
+        foreach ($extensions as $i => $extension) {
+            foreach ($database_extensions as $j => $database_extension) {
+                if ($extension['extension'] === $database_extension->extension && $extension['name'] === $database_extension->info['name']) {
+                    $extensions[$i]['data'] = $database_extension->toArray();
+                    $extensions[$i]['installed'] = true;
+                    unset($database_extensions[$j]);
+                    break;
+                }
+            }
+        }
+
+        return ExtensionResource::collection($extensions);
     }
 
     /**
@@ -161,7 +173,7 @@ class Extension
         if (!isset($extension_information['extension']) ||
             !isset($extension_information['name']) ||
             !isset($extension_information['version']) ||
-            !isset($extension_information['multiple'])) {
+            !isset($extension_information['title'])) {
             throw new ExtensionConfigurationNotMatchException($extension, $name);
         }
 
@@ -334,5 +346,72 @@ class Extension
     {
         // upload file
         // run $this->installZip($path, true)
+    }
+
+    /**
+     * Get extension with type
+     *
+     * @param string $type
+     *
+     * @return array
+     */
+    public function getExtensionWithType(string $type): array
+    {
+        $serviceType = ExtensionType::type($type);
+        $formatType = Str::studly($type);
+
+        $extensions = [];
+        $serviceType->getDriverNamespace()->each(function ($option, $namespace) use (&$extensions, $formatType) {
+            $path = resolveNamespacePath($namespace);
+
+            if (is_dir($path)) {
+                $realPath = realpath($path);
+                $folders = array_map('basename', File::directories($realPath));
+
+                foreach ($folders as $folder) {
+                    $folder_children = array_map('basename', File::directories($realPath . DIRECTORY_SEPARATOR . $folder));
+
+                    foreach ($folder_children as $folder_child) {
+                        $extensionRunnerAddress = $realPath . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . $folder_child . DIRECTORY_SEPARATOR . $folder_child . '.php';
+                        $extensionConfigAddress = $realPath . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . $folder_child . DIRECTORY_SEPARATOR . 'extension.json';
+
+                        if (file_exists($extensionRunnerAddress) && file_exists($extensionConfigAddress)) {
+                            $extensionConfig = json_decode(file_get_contents($extensionConfigAddress), true);
+
+                            if (empty($extensionConfig['extension']) || $extensionConfig['extension'] !== $formatType) {
+                                continue;
+                            }
+
+                            if (empty($extensionConfig['name']) || $extensionConfig['name'] !== $folder_child) {
+                                continue;
+                            }
+
+                            if (empty($extensionConfig['title']) || empty($extensionConfig['version'])) {
+                                continue;
+                            }
+
+                            if (isset($extensionConfig['fields'])) {
+                                unset($extensionConfig['fields']);
+                            }
+
+                            if (empty($extensionConfig['multiple'])) {
+                                $extensionConfig['multiple'] = false;
+                            }
+
+                            if (empty($extensionConfig['description'])) {
+                                $extensionConfig['description'] = 'extension::base.extension.default_description';
+                            }
+
+                            $extensions[] = array_merge($extensionConfig, [
+                                'namespace' => $namespace . '\\' . $folder . '\\' . $folder_child . '\\' . $folder_child,
+                                'deletable' => $option['deletable'] ?? false,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return $extensions;
     }
 }
