@@ -20,4 +20,9 @@ class ExtensionType extends ServiceType
     {
         return 'ExtensionServiceType';
     }
+
+    protected function namespaceDriver(): string
+    {
+        return 'extensions';
+    }
 }
