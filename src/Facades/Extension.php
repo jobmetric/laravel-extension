@@ -7,9 +7,8 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see \JobMetric\Extension\Extension
  *
- * @method static \Spatie\QueryBuilder\QueryBuilder query(array $filter = [], array $with = [])
- * @method static \Illuminate\Pagination\LengthAwarePaginator paginate(array $filter = [], int $page_limit = 15, array $with = [])
- * @method static \Illuminate\Http\Resources\Json\AnonymousResourceCollection all(array $filter = [], array $with = [])
+ * @method static \Spatie\QueryBuilder\QueryBuilder query(string $extension, array $filter = [], array $with = [])
+ * @method static \Illuminate\Http\Resources\Json\AnonymousResourceCollection all(string $extension, array $filter = [], array $with = [])
  * @method static \JobMetric\Extension\Models\Extension|\JobMetric\Extension\Http\Resources\ExtensionResource getInfo(string $extension, string $name, bool $has_resource = false)
  * @method static array install(string $extension, string $name)
  * @method static array uninstall(string $extension, string $name, bool $force_delete_plugin = false)
@@ -17,6 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void installZip(string $path, bool $delete_file = false)
  * @method static void download(string $path)
  * @method static void upload(string $path)
+ * @method static array getExtensionWithType(string $type)
  */
 class Extension extends Facade
 {
