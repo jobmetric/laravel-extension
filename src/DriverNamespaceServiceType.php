@@ -3,6 +3,7 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Trait DriverNamespaceServiceType
@@ -19,6 +20,13 @@ trait DriverNamespaceServiceType
     protected array $driverNamespace = [];
 
     /**
+     * Namespace driver.
+     *
+     * @return string
+     */
+    abstract protected function namespaceDriver(): string;
+
+    /**
      * Set Driver Namespace
      *
      * @param array $driverNamespace
@@ -27,6 +35,14 @@ trait DriverNamespaceServiceType
      */
     public function driverNamespace(array $driverNamespace): static
     {
+        if (empty($this->driverNamespace[$this->type])) {
+            $this->driverNamespace[$this->type] = [
+                appNamespace() . Str::studly($this->namespaceDriver()) . '\\' . Str::studly($this->type) => [
+                    'deletable' => true,
+                ],
+            ];
+        }
+
         $this->driverNamespace[$this->type] = array_merge($this->driverNamespace[$this->type] ?? [], $driverNamespace);
 
         $this->setTypeParam('driverNamespace', $this->driverNamespace);
