@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Facade;
  * @see \JobMetric\Extension\Extension
  *
  * @method static \Spatie\QueryBuilder\QueryBuilder query(string $extension, array $filter = [], array $with = [])
- * @method static \Illuminate\Http\Resources\Json\AnonymousResourceCollection all(string $extension, array $filter = [], array $with = [])
+ * @method static array all(string $extension, array $filter = [], array $with = [])
  * @method static \JobMetric\Extension\Models\Extension|\JobMetric\Extension\Http\Resources\ExtensionResource getInfo(string $extension, string $name, bool $has_resource = false)
  * @method static array install(string $extension, string $name)
  * @method static array uninstall(string $extension, string $name, bool $force_delete_plugin = false)

@@ -92,9 +92,9 @@ class Extension
      * @param array $filter
      * @param array $with
      *
-     * @return AnonymousResourceCollection
+     * @return array
      */
-    public function all(string $type, array $filter = [], array $with = []): AnonymousResourceCollection
+    public function all(string $type, array $filter = [], array $with = []): array
     {
         $database_extensions = $this->query(Str::studly($type), $filter, $with)->get();
 
@@ -110,7 +110,7 @@ class Extension
             }
         }
 
-        return ExtensionResource::collection($extensions);
+        return ExtensionResource::collection($extensions)->toArray(request());
     }
 
     /**
