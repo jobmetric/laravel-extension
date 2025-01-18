@@ -3,6 +3,7 @@
 namespace JobMetric\Extension;
 
 use JobMetric\BanIp\BanIp;
+use JobMetric\PackageCore\Exceptions\AssetFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\RegisterClassTypeNotFoundException;
 use JobMetric\PackageCore\Exceptions\ViewFolderNotFoundException;
@@ -18,10 +19,12 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
      * @throws MigrationFolderNotFoundException
      * @throws RegisterClassTypeNotFoundException
      * @throws ViewFolderNotFoundException
+     * @throws AssetFolderNotFoundException
      */
     public function configuration(PackageCore $package): void
     {
         $package->name('laravel-extension')
+            ->hasAsset()
             ->hasConfig()
             ->hasMigration()
             ->hasTranslation()
