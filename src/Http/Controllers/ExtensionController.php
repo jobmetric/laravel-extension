@@ -62,17 +62,35 @@ class ExtensionController extends Controller
         add_breadcrumb_base($panel, $section);
         Breadcrumb::add($data['label']);
 
-        // add button
-        Button::delete();
-
         DomiLocalize('extension', [
             'route' => $this->route['index'],
+            'language' => [
+                'website' => trans('extension::base.list.columns.website'),
+                'email' => trans('extension::base.list.columns.email'),
+                'namespace' => trans('extension::base.list.columns.namespace'),
+                'license' => trans('extension::base.list.columns.license'),
+                'delete_note' => trans('extension::base.list.columns.delete_note'),
+                'delete' => trans('extension::base.list.columns.delete'),
+                'creation_at' => trans('extension::base.list.columns.creation_at'),
+                'installed_at' => trans('extension::base.list.columns.installed_at'),
+                'updated_at' => trans('extension::base.list.columns.updated_at'),
+                'buttons' => [
+                    'install' => trans('extension::base.list.buttons.install'),
+                    'uninstall' => trans('extension::base.list.buttons.uninstall'),
+                ],
+            ],
+            'extensions' => Extension::all($type)
         ]);
+
+        /*echo '<pre dir="ltr">';
+        var_dump(Extension::all($type));
+        echo '</pre>';
+        die;*/
+
 
         DomiScript('assets/vendor/extension/js/list.js');
 
         $data['type'] = $type;
-        $data['extensions'] = Extension::all($type);
 
         $data['route'] = $this->route['options'];
 
