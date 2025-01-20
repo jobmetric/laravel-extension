@@ -25,6 +25,11 @@ return new class extends Migration {
              * This is the name of each Extension.
              */
 
+            $table->string('namespace');
+            /**
+             * This is the namespace of each Extension.
+             */
+
             $table->json('info')->nullable();
             /**
              * Information of the extension, this field will be filled from the installer file during installation.

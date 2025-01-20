@@ -14,11 +14,13 @@ use Illuminate\Support\Carbon;
  * @property int id
  * @property string extension
  * @property string name
+ * @property string namespace
  * @property array info
  * @property int plugin_count
  * @property Carbon created_at
  * @property Carbon updated_at
  * @method static ExtensionName(string $extension, string $name)
+ * @method static ExtensionNamespace(string $namespace)
  * @method static create(array $array)
  */
 class Extension extends Model
@@ -28,6 +30,7 @@ class Extension extends Model
     protected $fillable = [
         'extension',
         'name',
+        'namespace',
         'info'
     ];
 
@@ -39,6 +42,7 @@ class Extension extends Model
     protected $casts = [
         'extension' => 'string',
         'name' => 'string',
+        'namespace' => 'string',
         'info' => 'array'
     ];
 
@@ -71,6 +75,21 @@ class Extension extends Model
         return $query->where([
             'extension' => $extension,
             'name' => $name
+        ]);
+    }
+
+    /**
+     * Scope a query to only include the namespace.
+     *
+     * @param Builder $query
+     * @param string $namespace
+     *
+     * @return Builder
+     */
+    public function scopeExtensionNamespace(Builder $query, string $namespace): Builder
+    {
+        return $query->where([
+            'namespace' => $namespace
         ]);
     }
 
