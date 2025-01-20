@@ -1,3 +1,38 @@
+"use strict"
+
+const extension = {
+    install: function(element, e) {
+        e.preventDefault()
+
+        let namespace = $(element).data('namespace')
+
+        $.ajax({
+            url: getLocalize('extension.install'),
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                namespace: namespace
+            },
+            beforeSend: function () {
+                $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
+            },
+            complete: function () {
+                $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.buttons.install'))
+            },
+            success: function(json) {
+                toastr.success(json.message)
+
+                dt.clear()
+                dt.rows.add(json.extensions)
+                dt.draw()
+            },
+            error: function (xhr) {
+                toastr.error(xhr.responseJSON.message)
+            }
+        })
+    }
+}
+
 // Toggle child row on click
 function listShowDetails(data) {
     let html = `<div class="row">
@@ -52,7 +87,7 @@ function listShowDetails(data) {
                                             </div>
                                             <div>
                                                 <div class="fs-7 text-gray-600 fw-bold">${getLocalize('extension.language.installed_at')}</div>
-                                                <div class="fs-5 text-dark fw-bold lh-1" dir="ltr">${data.installed_at}</div>
+                                                <div class="fs-5 text-dark fw-bold lh-1" dir="ltr">${data.installed_at ? data.installed_at : `<div class="badge badge-warning">${getLocalize('extension.language.not_installed')}</div>`}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -177,17 +212,17 @@ loadScriptsSequentially([
                     data: function(e) {
                         if (e.installed) {
                             return `<div class="d-flex justify-content-center align-items-center">
-                                        <a href="${e.id}/uninstall" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800">
+                                        <a href="/uninstall" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800">
                                             <i class="la la-times fs-2 position-absolute"></i>
                                             <span class="ps-9">${getLocalize('extension.language.buttons.uninstall')}</span>
                                         </a>
                                     </div>`
                         } else {
                             return `<div class="d-flex justify-content-center align-items-center">
-                                        <a href="${e.id}/install" class="btn btn-sm btn-outline btn-outline-dashed bg-light-success btn-color-gray-800">
+                                        <button data-namespace="${e.namespace}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-success btn-color-gray-800" onclick="extension.install(this, event)">
                                             <i class="la la-download fs-2 position-absolute"></i>
                                             <span class="ps-9">${getLocalize('extension.language.buttons.install')}</span>
-                                        </a>
+                                        </button>
                                     </div>`
                         }
                     },
