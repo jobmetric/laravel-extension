@@ -40,7 +40,7 @@ class ExtensionResource extends JsonResource
             'multiple' => $this['multiple'],
             'namespace' => $this['namespace'],
             'deletable' => $this['deletable'],
-            'installed' => $this['installed'],
+            'installed' => $this['installed'] ?? false,
             'installed_at' => $this['data']['created_at'] ?? '',
             'updated_at' => $this['data']['updated_at'] ?? '',
             'plugin_count' => $this['data']['plugin_count'] ?? 0,
