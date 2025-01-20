@@ -5,19 +5,16 @@ namespace JobMetric\Extension\Http\Controllers;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
-use JobMetric\Language\Facades\Language;
-use JobMetric\Metadata\ServiceType\Metadata as MetadataServiceType;
-use JobMetric\Panelio\Facades\Breadcrumb;
-use JobMetric\Panelio\Facades\Button;
-use JobMetric\Panelio\Facades\Datatable;
-use JobMetric\Panelio\Http\Controllers\Controller;
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Facades\ExtensionType;
+use JobMetric\Extension\Http\Requests\InstallRequest;
 use JobMetric\Extension\Http\Requests\StoreExtensionRequest;
 use JobMetric\Extension\Http\Requests\UpdateExtensionRequest;
-use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
+use JobMetric\Language\Facades\Language;
+use JobMetric\Panelio\Facades\Breadcrumb;
+use JobMetric\Panelio\Facades\Button;
+use JobMetric\Panelio\Http\Controllers\Controller;
 use Throwable;
 
 class ExtensionController extends Controller
@@ -64,6 +61,11 @@ class ExtensionController extends Controller
 
         DomiLocalize('extension', [
             'route' => $this->route['index'],
+            'install' => route('extension.install', [
+                'panel' => $panel,
+                'section' => $section,
+                'type' => $type
+            ]),
             'language' => [
                 'website' => trans('extension::base.list.columns.website'),
                 'email' => trans('extension::base.list.columns.email'),
@@ -74,6 +76,7 @@ class ExtensionController extends Controller
                 'creation_at' => trans('extension::base.list.columns.creation_at'),
                 'installed_at' => trans('extension::base.list.columns.installed_at'),
                 'updated_at' => trans('extension::base.list.columns.updated_at'),
+                'not_installed' => trans('extension::base.list.columns.not_installed'),
                 'buttons' => [
                     'install' => trans('extension::base.list.buttons.install'),
                     'uninstall' => trans('extension::base.list.buttons.uninstall'),
@@ -82,12 +85,6 @@ class ExtensionController extends Controller
             'extensions' => Extension::all($type)
         ]);
 
-        /*echo '<pre dir="ltr">';
-        var_dump(Extension::all($type));
-        echo '</pre>';
-        die;*/
-
-
         DomiScript('assets/vendor/extension/js/list.js');
 
         $data['type'] = $type;
@@ -95,6 +92,30 @@ class ExtensionController extends Controller
         $data['route'] = $this->route['options'];
 
         return view('extension::list', $data);
+    }
+
+    /**
+     * Install the extension.
+     *
+     * @param string $panel
+     * @param string $section
+     * @param string $type
+     * @param InstallRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function install(string $panel, string $section, string $type, InstallRequest $request): JsonResponse
+    {
+        try {
+            return $this->response(
+                Extension::install($request->validated()),
+                additional: [
+                    'extensions' => Extension::all($type)
+                ]
+            );
+        } catch (Throwable $exception) {
+            return $this->response(message: $exception->getMessage(), status: $exception->getCode());
+        }
     }
 
     /**
