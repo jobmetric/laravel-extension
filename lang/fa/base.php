@@ -14,6 +14,7 @@ return [
 
     "validation" => [
         "errors" => "خطاهای اعتبار سنجی رخ داده است.",
+        "namespace_not_found" => "آدرس فایل :namespace یافت نشد.",
     ],
 
     "exceptions" => [
@@ -71,6 +72,7 @@ return [
             "delete" => "حذف افزونه",
             "creation_at" => "تاریخ ساخت افزونه",
             "updated_at" => "تاریخ آخرین بروزرسانی",
+            "not_installed" => "نصب نشده",
         ],
         "buttons" => [
             "install" => "نصب",

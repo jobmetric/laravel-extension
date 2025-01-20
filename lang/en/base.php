@@ -14,6 +14,7 @@ return [
 
     "validation" => [
         "errors" => "Validation errors occurred.",
+        "namespace_not_found" => "The :namespace file not found.",
     ],
 
     "exceptions" => [
@@ -71,6 +72,7 @@ return [
             "delete" => "Delete Extension",
             "creation_at" => "Extension Creation Date",
             "updated_at" => "Extension Updated Date",
+            "not_installed" => "Not Installed",
         ],
         "buttons" => [
             "install" => "Install",
