@@ -141,56 +141,54 @@ class Extension
     /**
      * Extension installer
      *
-     * @param string $extension
-     * @param string $name
+     * @param string $namespace
      *
      * @return array
      * @throws Throwable
      */
-    public function install(string $extension, string $name): array
+    public function install(string $namespace): array
     {
-        if (!in_array($extension, ExtensionTypeEnum::values())) {
-            throw new ExtensionTypeInvalidException($extension, $name);
+        if (ExtensionModel::ExtensionNamespace($namespace)->exists()) {
+            throw new ExtensionAlreadyInstalledException($namespace);
         }
 
-        if (ExtensionModel::ExtensionName($extension, $name)->exists()) {
-            throw new ExtensionAlreadyInstalledException($extension, $name);
+        $namespace_path = resolveNamespacePath($namespace);
+        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
+
+        $name = array_pop($namespace_parts);
+        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
+        array_pop($namespace_parts);
+        $extension = array_pop($namespace_parts);
+
+        if (!is_dir($folder)) {
+            throw new ExtensionFolderNotFoundException($name);
         }
 
-        $app_folder = appFolderName();
-        $app_namespace = appNamespace();
-
-        if (!is_dir(base_path("$app_folder/Extensions/$extension/$name"))) {
-            throw new ExtensionFolderNotFoundException($extension, $name);
+        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
+            throw new ExtensionConfigFileNotFoundException($name);
         }
 
-        if (!file_exists(base_path("$app_folder/Extensions/$extension/$name/extension.json"))) {
-            throw new ExtensionConfigFileNotFoundException($extension, $name);
-        }
-
-        $extension_information = json_decode(file_get_contents(base_path("$app_folder/Extensions/$extension/$name/extension.json")), true);
+        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
 
         if (!isset($extension_information['extension']) ||
             !isset($extension_information['name']) ||
             !isset($extension_information['version']) ||
             !isset($extension_information['title'])) {
-            throw new ExtensionConfigurationNotMatchException($extension, $name);
+            throw new ExtensionConfigurationNotMatchException($name);
         }
 
-        if (!file_exists(base_path("$app_folder/Extensions/$extension/$name/$name.php"))) {
-            throw new ExtensionRunnerNotFoundException($extension, $name);
+        if (!file_exists($folder . DIRECTORY_SEPARATOR . "$name.php")) {
+            throw new ExtensionRunnerNotFoundException($name);
         }
-
-        $namespace = "{$app_namespace}Extensions\\$extension\\$name\\$name";
 
         // check class name
         if (!class_exists($namespace)) {
-            throw new ExtensionClassNameNotMatchException($extension, $name);
+            throw new ExtensionClassNameNotMatchException($name);
         }
 
         // check class has implement ExtensionContract
         if (!in_array('JobMetric\Extension\Contracts\ExtensionContract', class_implements($namespace))) {
-            throw new ExtensionDontHaveContractException($extension, $name);
+            throw new ExtensionDontHaveContractException($name);
         }
 
         // run install method
@@ -203,6 +201,7 @@ class Extension
 
         $extension_model->extension = $extension;
         $extension_model->name = $name;
+        $extension_model->namespace = $namespace;
         $extension_model->info = $extension_information;
 
         $extension_model->save();
@@ -212,10 +211,8 @@ class Extension
         return [
             'ok' => true,
             'message' => trans('extension::base.messages.extension.installed', [
-                'extension' => $extension,
                 'name' => $name
             ]),
-            'data' => ExtensionResource::make($extension_model),
             'status' => 200
         ];
     }
@@ -265,7 +262,6 @@ class Extension
         return [
             'ok' => true,
             'message' => trans('extension::base.messages.extension.uninstalled', [
-                'extension' => $extension,
                 'name' => $name
             ]),
             'data' => $data,
