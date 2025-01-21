@@ -107,8 +107,10 @@ class ExtensionController extends Controller
     public function install(string $panel, string $section, string $type, InstallRequest $request): JsonResponse
     {
         try {
+            $namespace = $request->validated()['namespace'];
+
             return $this->response(
-                Extension::install($request->validated()),
+                Extension::install($namespace),
                 additional: [
                     'extensions' => Extension::all($type)
                 ]
