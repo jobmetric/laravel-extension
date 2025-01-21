@@ -2,6 +2,7 @@
 
 namespace JobMetric\Extension\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,8 +42,8 @@ class ExtensionResource extends JsonResource
             'namespace' => $this['namespace'],
             'deletable' => $this['deletable'],
             'installed' => $this['installed'] ?? false,
-            'installed_at' => $this['data']['created_at'] ?? '',
-            'updated_at' => $this['data']['updated_at'] ?? '',
+            'installed_at' => $this['data']['created_at'] ? Carbon::make($this['data']['created_at'])->format('Y-m-d H:i:s') : '',
+            'updated_at' => $this['data']['updated_at'] ? Carbon::make($this['data']['updated_at'])->format('Y-m-d H:i:s') : '',
             'plugin_count' => $this['data']['plugin_count'] ?? 0,
         ];
     }
