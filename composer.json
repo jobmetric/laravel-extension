@@ -22,7 +22,7 @@
     "require": {
         "php": ">=8.0.1",
         "laravel/framework": ">=9.19",
-        "jobmetric/laravel-package-core": "^1.7",
+        "jobmetric/laravel-package-core": "^1.19.2",
         "jobmetric/laravel-event-system": "^1.1",
         "jobmetric/domi": "^1.13.1",
         "jobmetric/panelio": "^1.16.1",
