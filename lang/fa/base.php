@@ -19,14 +19,14 @@ return [
 
     "exceptions" => [
         "extension_already_installed" => "افزونه :namespace قبلاً نصب شده است.",
-        "extension_not_installed" => "افزونه :extension/:name نصب نشده است.",
+        "extension_not_installed" => "افزونه :name نصب نشده است.",
         "extension_folder_not_found" => "پوشه افزونه :name یافت نشد.",
         "extension_runner_not_found" => "Runner افزونه :name یافت نشد.",
         "extension_config_file_not_found" => "فایل پیکربندی افزونه :name یافت نشد.",
         "extension_configuration_not_match" => "پیکربندی افزونه :name با پیکربندی افزونه اصلی مطابقت ندارد.",
         "extension_class_name_not_match" => "نام کلاس افزونه :name با نام کلاس اصلی مطابقت ندارد.",
         "extension_dont_have_contract" => "افزونه :name دارای قرارداد JobMetric\Extension\Contracts\ExtensionContract نیست.",
-        "extension_have_some_plugin" => "افزونه :extension دارای چند افزونه است. لطفا ابتدا افزونه را حذف نصب کنید.",
+        "extension_have_some_plugin" => "افزونه :name دارای چند افزونه است. لطفا ابتدا افزونه را حذف نصب کنید.",
         "plugin_not_found" => "افزونه با شناسه :plugin_id پیدا نشد.",
         "plugin_not_multiple" => "افزونه :extension/:name دارای چندین افزونه نیست.",
     ],
@@ -72,6 +72,8 @@ return [
             "creation_at" => "تاریخ ساخت افزونه",
             "updated_at" => "تاریخ آخرین بروزرسانی",
             "not_installed" => "نصب نشده",
+            "simple" => "ساده",
+            "multiple" => "چندگانه",
         ],
         "buttons" => [
             "install" => "نصب",
