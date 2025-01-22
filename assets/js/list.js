@@ -30,6 +30,36 @@ const extension = {
                 toastr.error(xhr.responseJSON.message)
             }
         })
+    },
+    uninstall: function(element, e) {
+        e.preventDefault()
+
+        let namespace = $(element).data('namespace')
+
+        $.ajax({
+            url: getLocalize('extension.uninstall'),
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                namespace: namespace
+            },
+            beforeSend: function () {
+                $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
+            },
+            complete: function () {
+                $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.buttons.uninstall'))
+            },
+            success: function(json) {
+                toastr.success(json.message)
+
+                dt.clear()
+                dt.rows.add(json.extensions)
+                dt.draw()
+            },
+            error: function (xhr) {
+                toastr.error(xhr.responseJSON.message)
+            }
+        })
     }
 }
 
@@ -187,7 +217,10 @@ loadScriptsSequentially([
                 {
                     name: 'title',
                     data: function(e) {
-                        return `<div class="align-start text-gray-800 word-no-break">${e.title}</div>`
+                        return `<div class="align-start text-gray-800 w-100 pe-10 d-flex justify-content-between align-items-center">
+                                    <span>${e.title}</span>
+                                    <div class="badge text-gray-800 ${e.multiple ? 'bg-light-success' : 'bg-light-danger'}">${e.multiple ? getLocalize('extension.language.multiple') : getLocalize('extension.language.simple')}</div>
+                                </div>`
                     },
                     sortable: true
                 },
@@ -212,10 +245,10 @@ loadScriptsSequentially([
                     data: function(e) {
                         if (e.installed) {
                             return `<div class="d-flex justify-content-center align-items-center">
-                                        <a href="/uninstall" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800">
+                                        <button data-namespace="${e.namespace}" data-multiple="${e.multiple}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800" onclick="extension.uninstall(this, event)">
                                             <i class="la la-times fs-2 position-absolute"></i>
                                             <span class="ps-9">${getLocalize('extension.language.buttons.uninstall')}</span>
-                                        </a>
+                                        </button>
                                     </div>`
                         } else {
                             return `<div class="d-flex justify-content-center align-items-center">
