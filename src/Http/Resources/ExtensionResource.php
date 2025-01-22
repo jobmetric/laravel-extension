@@ -42,8 +42,8 @@ class ExtensionResource extends JsonResource
             'namespace' => $this['namespace'],
             'deletable' => $this['deletable'],
             'installed' => $this['installed'] ?? false,
-            'installed_at' => $this['data']['created_at'] ? Carbon::make($this['data']['created_at'])->format('Y-m-d H:i:s') : '',
-            'updated_at' => $this['data']['updated_at'] ? Carbon::make($this['data']['updated_at'])->format('Y-m-d H:i:s') : '',
+            'installed_at' => isset($this['data']['created_at']) ? Carbon::make($this['data']['created_at'])->format('Y-m-d H:i:s') : '',
+            'updated_at' => isset($this['data']['updated_at']) ? Carbon::make($this['data']['updated_at'])->format('Y-m-d H:i:s') : '',
             'plugin_count' => $this['data']['plugin_count'] ?? 0,
         ];
     }
