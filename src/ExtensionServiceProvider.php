@@ -2,6 +2,7 @@
 
 namespace JobMetric\Extension;
 
+use Illuminate\Support\Str;
 use JobMetric\BanIp\BanIp;
 use JobMetric\PackageCore\Exceptions\AssetFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
@@ -49,19 +50,20 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
     {
         $extensionPath = app_path('Extensions');
         if (is_dir($extensionPath)) {
+            $ds = DIRECTORY_SEPARATOR;
             $extensions = array_diff(scandir($extensionPath), ['..', '.']);
 
             foreach ($extensions as $extension) {
-                $modules = array_diff(scandir($extensionPath . '/' . $extension), ['..', '.']);
+                $modules = array_diff(scandir($extensionPath . $ds . $extension), ['..', '.']);
                 foreach ($modules as $module) {
-                    $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/' . app()->getLocale() . '/extension.php';
+                    $langFile = $extensionPath . $ds . $extension . $ds . $module . $ds . 'lang' . $ds . app()->getLocale() . $ds . 'extension.php';
 
                     if (!file_exists($langFile)) {
-                        $langFile = $extensionPath . '/' . $extension . '/' . $module . '/lang/en/extension.php';
+                        $langFile = $extensionPath . $ds . $extension . $ds . $module . $ds . "lang${$ds}en${$ds}extension.php";
                     }
 
                     if(file_exists($langFile)) {
-                        $this->loadTranslationsFrom($extensionPath . '/' . $extension . '/' . $module . '/lang', 'extension_'.$extension.'_'.$module);
+                        $this->loadTranslationsFrom($extensionPath . $ds . $extension . $ds . $module . $ds . 'lang', 'extension-' . Str::kebab($extension) . '-' . Str::kebab($module));
                     }
                 }
             }
