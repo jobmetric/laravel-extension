@@ -148,10 +148,6 @@ class Extension
      */
     public function install(string $namespace): array
     {
-        if (ExtensionModel::ExtensionNamespace($namespace)->exists()) {
-            throw new ExtensionAlreadyInstalledException($namespace);
-        }
-
         $namespace_path = resolveNamespacePath($namespace);
         $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
 
@@ -166,6 +162,10 @@ class Extension
 
         if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
             throw new ExtensionConfigFileNotFoundException($name);
+        }
+
+        if (ExtensionModel::ExtensionNamespace($namespace)->exists()) {
+            throw new ExtensionAlreadyInstalledException($namespace);
         }
 
         $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
@@ -206,12 +206,29 @@ class Extension
 
         $extension_model->save();
 
+        if (!isset($extension_information['multiple']) || !$extension_information['multiple']) {
+            $fields = [];
+            foreach ($extension_information['fields'] ?? [] as $field) {
+                $field_name = $field['name'] ?? null;
+
+                if ($field_name) {
+                    $fields[$field_name] = $field['default'] ?? null;
+                }
+            }
+
+            $extension_model->plugins()->create([
+                'title' => $extension_information['title'],
+                'fields' => $fields,
+                'status' => true,
+            ]);
+        }
+
         event(new ExtensionInstallEvent($extension_model));
 
         return [
             'ok' => true,
             'message' => trans('extension::base.messages.extension.installed', [
-                'name' => $name
+                'name' => trans($extension_information['title'])
             ]),
             'status' => 200
         ];
@@ -220,34 +237,46 @@ class Extension
     /**
      * Extension uninstaller
      *
-     * @param string $extension
-     * @param string $name
+     * @param string $namespace
      * @param bool $force_delete_plugin
      *
      * @return array
      * @throws Throwable
      */
-    public function uninstall(string $extension, string $name, bool $force_delete_plugin = false): array
+    public function uninstall(string $namespace, bool $force_delete_plugin = false): array
     {
-        $app_namespace = appNamespace();
+        $namespace_path = resolveNamespacePath($namespace);
+        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
 
-        $extension_model = ExtensionModel::ExtensionName($extension, $name)->with('plugins')->first();
+        $name = array_pop($namespace_parts);
+        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
+        array_pop($namespace_parts);
+
+        if (!is_dir($folder)) {
+            throw new ExtensionFolderNotFoundException($name);
+        }
+
+        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
+            throw new ExtensionConfigFileNotFoundException($name);
+        }
+
+        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
+
+        $multiple = $extension_information['multiple'] ?? false;
+
+        $extension_model = ExtensionModel::ExtensionNamespace($namespace)->with('plugins')->first();
 
         if (!$extension_model) {
-            throw new ExtensionNotInstalledException($extension, $name);
+            throw new ExtensionNotInstalledException($name);
         }
 
-        if (!$force_delete_plugin && $extension_model->plugins->count() > 0) {
-            throw new ExtensionHaveSomePluginException($extension, $name);
+        if ($multiple && !$force_delete_plugin && $extension_model->plugins->count() > 0) {
+            throw new ExtensionHaveSomePluginException($name);
         }
-
-        $namespace = "{$app_namespace}Extensions\\$extension\\$name\\$name";
 
         if (method_exists($namespace, 'uninstall')) {
             $namespace::uninstall();
         }
-
-        $data = ExtensionResource::make($extension_model);
 
         $extension_model->plugins()->get()->each(function ($plugin) {
             event(new PluginDeleteEvent($plugin));
@@ -262,9 +291,8 @@ class Extension
         return [
             'ok' => true,
             'message' => trans('extension::base.messages.extension.uninstalled', [
-                'name' => $name
+                'name' => trans($extension_information['title'])
             ]),
-            'data' => $data,
             'status' => 200
         ];
     }
