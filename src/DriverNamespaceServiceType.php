@@ -37,7 +37,7 @@ trait DriverNamespaceServiceType
     {
         if (empty($this->driverNamespace[$this->type])) {
             $this->driverNamespace[$this->type] = [
-                appNamespace() . Str::studly($this->namespaceDriver()) . '\\' . Str::studly($this->type) => [
+                appNamespace() . Str::studly($this->namespaceDriver()) => [
                     'deletable' => true,
                 ],
             ];
