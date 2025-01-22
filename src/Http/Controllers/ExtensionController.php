@@ -8,8 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Http\Requests\InstallRequest;
-use JobMetric\Extension\Http\Requests\StoreExtensionRequest;
-use JobMetric\Extension\Http\Requests\UpdateExtensionRequest;
+use JobMetric\Extension\Http\Requests\UninstallRequest;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Language\Facades\Language;
 use JobMetric\Panelio\Facades\Breadcrumb;
@@ -66,6 +65,11 @@ class ExtensionController extends Controller
                 'section' => $section,
                 'type' => $type
             ]),
+            'uninstall' => route('extension.uninstall', [
+                'panel' => $panel,
+                'section' => $section,
+                'type' => $type
+            ]),
             'language' => [
                 'website' => trans('extension::base.list.columns.website'),
                 'email' => trans('extension::base.list.columns.email'),
@@ -77,6 +81,8 @@ class ExtensionController extends Controller
                 'installed_at' => trans('extension::base.list.columns.installed_at'),
                 'updated_at' => trans('extension::base.list.columns.updated_at'),
                 'not_installed' => trans('extension::base.list.columns.not_installed'),
+                'simple' => trans('extension::base.list.columns.simple'),
+                'multiple' => trans('extension::base.list.columns.multiple'),
                 'buttons' => [
                     'install' => trans('extension::base.list.buttons.install'),
                     'uninstall' => trans('extension::base.list.buttons.uninstall'),
@@ -111,6 +117,32 @@ class ExtensionController extends Controller
 
             return $this->response(
                 Extension::install($namespace),
+                additional: [
+                    'extensions' => Extension::all($type)
+                ]
+            );
+        } catch (Throwable $exception) {
+            return $this->response(message: $exception->getMessage(), status: $exception->getCode());
+        }
+    }
+
+    /**
+     * Uninstall the extension.
+     *
+     * @param string $panel
+     * @param string $section
+     * @param string $type
+     * @param UninstallRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function uninstall(string $panel, string $section, string $type, UninstallRequest $request): JsonResponse
+    {
+        try {
+            $namespace = $request->validated()['namespace'];
+
+            return $this->response(
+                Extension::uninstall($namespace),
                 additional: [
                     'extensions' => Extension::all($type)
                 ]
