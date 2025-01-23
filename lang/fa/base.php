@@ -81,6 +81,8 @@ return [
         "buttons" => [
             "install" => "نصب",
             "uninstall" => "حذف نصب",
+            "add_plugin" => "افزودن پلاگین",
+            "plugin_list" => "لیست پلاگین ها",
         ],
     ],
 
