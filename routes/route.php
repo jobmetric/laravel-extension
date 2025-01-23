@@ -16,6 +16,7 @@ use JobMetric\Panelio\Facades\Middleware;
 // Extension
 Route::prefix('p/{panel}/{section}/extension')->name('extension.')->namespace('JobMetric\Extension\Http\Controllers')->group(function () {
     Route::middleware(Middleware::getMiddlewares())->group(function () {
+        Route::post('{type}/delete', [ExtensionController::class, 'delete'])->name('delete');
         Route::post('{type}/install', [ExtensionController::class, 'install'])->name('install');
         Route::post('{type}/uninstall', [ExtensionController::class, 'uninstall'])->name('uninstall');
         Route::options('{type}', [ExtensionController::class, 'options'])->name('options');

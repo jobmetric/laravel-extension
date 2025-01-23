@@ -18,8 +18,10 @@ return [
     ],
 
     "exceptions" => [
-        "extension_already_installed" => "افزونه :namespace قبلاً نصب شده است.",
+        "extension_already_installed" => "افزونه :name قبلاً نصب شده است.",
         "extension_not_installed" => "افزونه :name نصب نشده است.",
+        "extension_not_uninstalled" => "افزونه :name حذف نصب نشده است.",
+        "extension_not_deletable" => "افزونه :name قابل حذف نیست.",
         "extension_folder_not_found" => "پوشه افزونه :name یافت نشد.",
         "extension_runner_not_found" => "Runner افزونه :name یافت نشد.",
         "extension_config_file_not_found" => "فایل پیکربندی افزونه :name یافت نشد.",
@@ -35,6 +37,7 @@ return [
         "extension" => [
             "installed" => "افزونه :name نصب شده است.",
             "uninstalled" => "افزونه :name حذف نصب شده است.",
+            "deleted" => "افزونه :name حذف شده است.",
             "updated" => "افزونه :name به روز شده است.",
         ],
 

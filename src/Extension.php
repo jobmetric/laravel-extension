@@ -3,11 +3,8 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use JobMetric\Extension\Enums\ExtensionTypeEnum;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
 use JobMetric\Extension\Events\ExtensionUninstallEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
@@ -18,13 +15,14 @@ use JobMetric\Extension\Exceptions\ExtensionConfigurationNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionDontHaveContractException;
 use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
+use JobMetric\Extension\Exceptions\ExtensionNotDeletableException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
+use JobMetric\Extension\Exceptions\ExtensionNotUninstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionTypeInvalidException;
 use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
-use JobMetric\Taxonomy\Http\Resources\TaxonomyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
@@ -165,7 +163,7 @@ class Extension
         }
 
         if (ExtensionModel::ExtensionNamespace($namespace)->exists()) {
-            throw new ExtensionAlreadyInstalledException($namespace);
+            throw new ExtensionAlreadyInstalledException($name);
         }
 
         $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
@@ -291,6 +289,68 @@ class Extension
         return [
             'ok' => true,
             'message' => trans('extension::base.messages.extension.uninstalled', [
+                'name' => trans($extension_information['title'])
+            ]),
+            'status' => 200
+        ];
+    }
+
+    /**
+     * Extension delete
+     *
+     * @param string $type
+     * @param string $namespace
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function delete(string $type, string $namespace): array
+    {
+        $namespace_path = resolveNamespacePath($namespace);
+        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
+
+        $name = array_pop($namespace_parts);
+        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
+        array_pop($namespace_parts);
+
+        if (!is_dir($folder)) {
+            throw new ExtensionFolderNotFoundException($name);
+        }
+
+        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
+            throw new ExtensionConfigFileNotFoundException($name);
+        }
+
+        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
+
+        $extension_model = ExtensionModel::ExtensionNamespace($namespace)->first();
+
+        if ($extension_model) {
+            throw new ExtensionNotUninstalledException($name);
+        }
+
+        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace);
+        array_pop($namespace_parts);
+        array_pop($namespace_parts);
+        array_pop($namespace_parts);
+        $namespace_folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
+
+        $flag = false;
+        ExtensionType::type($type)->getDriverNamespace()->each(function ($item, $key) use (&$flag, $namespace_folder) {
+            if ($key === $namespace_folder && $item['deletable']) {
+                $flag = true;
+            }
+        });
+
+        if($flag) {
+            File::deleteDirectory($folder);
+        } else {
+            throw new ExtensionNotDeletableException($name);
+        }
+
+        return [
+            'ok' => true,
+            'message' => trans('extension::base.messages.extension.deleted', [
                 'name' => trans($extension_information['title'])
             ]),
             'status' => 200

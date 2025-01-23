@@ -1,13 +1,18 @@
 "use strict"
 
 const extension = {
+    list: function(data) {
+        dt.clear()
+        dt.rows.add(data)
+        dt.draw()
+    },
     install: function(element, e) {
         e.preventDefault()
 
         let namespace = $(element).data('namespace')
 
         $.ajax({
-            url: getLocalize('extension.install'),
+            url: getLocalize('extension.routes.install'),
             method: 'POST',
             dataType: 'json',
             data: {
@@ -22,9 +27,7 @@ const extension = {
             success: function(json) {
                 toastr.success(json.message)
 
-                dt.clear()
-                dt.rows.add(json.extensions)
-                dt.draw()
+                extension.list(json.extensions)
             },
             error: function (xhr) {
                 toastr.error(xhr.responseJSON.message)
@@ -37,7 +40,7 @@ const extension = {
         let namespace = $(element).data('namespace')
 
         $.ajax({
-            url: getLocalize('extension.uninstall'),
+            url: getLocalize('extension.routes.uninstall'),
             method: 'POST',
             dataType: 'json',
             data: {
@@ -52,9 +55,35 @@ const extension = {
             success: function(json) {
                 toastr.success(json.message)
 
-                dt.clear()
-                dt.rows.add(json.extensions)
-                dt.draw()
+                extension.list(json.extensions)
+            },
+            error: function (xhr) {
+                toastr.error(xhr.responseJSON.message)
+            }
+        })
+    },
+    delete: function(element, e) {
+        e.preventDefault()
+
+        let namespace = $(element).data('namespace')
+
+        $.ajax({
+            url: getLocalize('extension.routes.delete'),
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                namespace: namespace
+            },
+            beforeSend: function () {
+                $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
+            },
+            complete: function () {
+                $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.delete'))
+            },
+            success: function(json) {
+                toastr.success(json.message)
+
+                extension.list(json.extensions)
             },
             error: function (xhr) {
                 toastr.error(xhr.responseJSON.message)
@@ -162,10 +191,10 @@ function listShowDetails(data) {
                                         <div class="col-12">
                                             <div class="d-flex justify-content-between align-items-center me-2">
                                                 <div class="fs-7 text-gray-600 fw-bold">${getLocalize('extension.language.delete_note')}</div>
-                                                <a href="${data.id}/delete" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800">
+                                                <button data-namespace="${data.namespace}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800" onclick="extension.delete(this, event)">
                                                     <i class="la la-trash fs-2 position-absolute"></i>
                                                     <span class="ps-9">${getLocalize('extension.language.delete')}</span>
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>`
                                     }
