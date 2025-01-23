@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Http\Controllers\ExtensionController;
+use JobMetric\Extension\Http\Controllers\PluginController;
 use JobMetric\Panelio\Facades\Middleware;
 
 /*
@@ -13,13 +14,20 @@ use JobMetric\Panelio\Facades\Middleware;
 |
 */
 
-// Extension
-Route::prefix('p/{panel}/{section}/extension')->name('extension.')->namespace('JobMetric\Extension\Http\Controllers')->group(function () {
-    Route::middleware(Middleware::getMiddlewares())->group(function () {
-        Route::post('{type}/delete', [ExtensionController::class, 'delete'])->name('delete');
-        Route::post('{type}/install', [ExtensionController::class, 'install'])->name('install');
-        Route::post('{type}/uninstall', [ExtensionController::class, 'uninstall'])->name('uninstall');
-        Route::options('{type}', [ExtensionController::class, 'options'])->name('options');
-        Route::resource('{type}', ExtensionController::class)->except(['show', 'destroy'])->parameter('{type}', 'jm_extension:id');
+Route::middleware(Middleware::getMiddlewares())->prefix('p/{panel}/{section}/extension/{type}')->namespace('JobMetric\Extension\Http\Controllers')->group(function () {
+    // Extension
+    Route::name('extension.')->group(function () {
+        Route::get('/', [ExtensionController::class, 'index'])->name('index');
+        Route::post('install', [ExtensionController::class, 'install'])->name('install');
+        Route::post('uninstall', [ExtensionController::class, 'uninstall'])->name('uninstall');
+        Route::post('delete', [ExtensionController::class, 'delete'])->name('delete');
     });
+
+    // Plugin
+    Route::options('extension/{jm_extension}/plugin', [PluginController::class, 'options'])->name('extension.plugin.options');
+    Route::resource('extension.plugin', PluginController::class)->except(['show', 'destroy'])
+        ->parameters([
+            'extension' => 'jm_extension:id',
+            'plugin' => 'jm_plugin:id'
+        ]);
 });
