@@ -76,6 +76,8 @@ class Extension
 
         $query->where('extension', $extension);
 
+        $query->with('plugins');
+
         if (!empty($with)) {
             $query->with($with);
         }
