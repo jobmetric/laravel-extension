@@ -25,7 +25,7 @@ class ExtensionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             'id' => $this['data']['id'] ?? null,
             'extension' => $this['extension'],
             'name' => $this['name'],
@@ -46,5 +46,32 @@ class ExtensionResource extends JsonResource
             'updated_at' => isset($this['data']['updated_at']) ? Carbon::make($this['data']['updated_at'])->format('Y-m-d H:i:s') : '',
             'plugin_count' => $this['data']['plugin_count'] ?? 0,
         ];
+
+        if ($data['installed']) {
+            if ($data['multiple']) {
+                $data['plugins_link'] = route('extension.plugin.index', [
+                    'panel' => $request->panel,
+                    'section' => $request->section,
+                    'type' => $request->type,
+                    'jm_extension' => $this['data']['id']
+                ]);
+                $data['plugin_add'] = route('extension.plugin.create', [
+                    'panel' => $request->panel,
+                    'section' => $request->section,
+                    'type' => $request->type,
+                    'jm_extension' => $this['data']['id']
+                ]);
+            } else {
+                $data['edit_link'] = route('extension.plugin.edit', [
+                    'panel' => $request->panel,
+                    'section' => $request->section,
+                    'type' => $request->type,
+                    'jm_extension' => $this['data']['id'],
+                    'jm_plugin' => $this['data']['plugins'][0]['id']
+                ]);
+            }
+        }
+
+        return $data;
     }
 }
