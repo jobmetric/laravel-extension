@@ -1,7 +1,7 @@
 @extends('panelio::layout.layout')
 
 @section('body')
-    <x-list-view name="{{ $label }}" action="{{ $route }}">
+    <x-list-view name="{{ $label }}" action="javascript:void(0)">
         <thead>
             <tr>
                 <th width="1%"></th>

@@ -15,22 +15,6 @@ use Throwable;
 
 class ExtensionController extends Controller
 {
-    private array $route;
-
-    public function __construct()
-    {
-        if (request()->route()) {
-            $parameters = request()->route()->parameters();
-
-            $this->route = [
-                'index' => route('extension.{type}.index', $parameters),
-                'create' => route('extension.{type}.create', $parameters),
-                'store' => route('extension.{type}.store', $parameters),
-                'options' => route('extension.options', $parameters),
-            ];
-        }
-    }
-
     /**
      * Display a listing of the extension.
      *
@@ -97,8 +81,6 @@ class ExtensionController extends Controller
         DomiScript('assets/vendor/extension/js/list.js');
 
         $data['type'] = $type;
-
-        $data['route'] = $this->route['options'];
 
         return view('extension::list', $data);
     }
