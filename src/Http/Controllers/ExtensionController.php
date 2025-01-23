@@ -73,6 +73,8 @@ class ExtensionController extends Controller
                 'buttons' => [
                     'install' => trans('extension::base.list.buttons.install'),
                     'uninstall' => trans('extension::base.list.buttons.uninstall'),
+                    'add_plugin' => trans('extension::base.list.buttons.add_plugin'),
+                    'plugin_list' => trans('extension::base.list.buttons.plugin_list'),
                 ],
             ],
             'extensions' => Extension::all($type)
