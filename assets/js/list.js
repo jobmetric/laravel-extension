@@ -272,21 +272,47 @@ loadScriptsSequentially([
                 // action
                 {
                     data: function(e) {
+                        let buttons = '<div class="d-flex justify-content-end align-items-center">'
                         if (e.installed) {
-                            return `<div class="d-flex justify-content-center align-items-center">
-                                        <button data-namespace="${e.namespace}" data-multiple="${e.multiple}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800" onclick="extension.uninstall(this, event)">
-                                            <i class="la la-times fs-2 position-absolute"></i>
-                                            <span class="ps-9">${getLocalize('extension.language.buttons.uninstall')}</span>
-                                        </button>
-                                    </div>`
+                            if (e.multiple) {
+                                buttons += `<div class="d-flex justify-content-center align-items-center">
+                                                <a href="${e.plugin_add}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800 me-3">
+                                                    <i class="la la-plus fs-2 position-absolute"></i>
+                                                    <span class="ps-9">${getLocalize('extension.language.buttons.add_plugin')}</span>
+                                                </a>
+                                            </div>
+                                            <div class="d-flex justify-content-center align-items-center">
+                                                <a href="${e.plugins_link}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800 me-3">
+                                                    <i class="la la-bars fs-2 position-absolute"></i>
+                                                    <span class="ps-9">${getLocalize('extension.language.buttons.plugin_list')}</span>
+                                                </a>
+                                            </div>`
+                            } else {
+                                buttons += `<div class="d-flex justify-content-center align-items-center">
+                                                <a href="${e.edit_link}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800 me-3">
+                                                    <i class="la la-times fs-2 position-absolute"></i>
+                                                    <span class="ps-9">${getLocalize('language.panelio.button.edit')}</span>
+                                                </a>
+                                            </div>`
+                            }
+                            buttons += `<div class="d-flex justify-content-center align-items-center">
+                                            <button data-namespace="${e.namespace}" data-multiple="${e.multiple}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800" onclick="extension.uninstall(this, event)">
+                                                <i class="la la-times fs-2 position-absolute"></i>
+                                                <span class="ps-9">${getLocalize('extension.language.buttons.uninstall')}</span>
+                                            </button>
+                                        </div>`
                         } else {
-                            return `<div class="d-flex justify-content-center align-items-center">
-                                        <button data-namespace="${e.namespace}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-success btn-color-gray-800" onclick="extension.install(this, event)">
-                                            <i class="la la-download fs-2 position-absolute"></i>
-                                            <span class="ps-9">${getLocalize('extension.language.buttons.install')}</span>
-                                        </button>
-                                    </div>`
+                            buttons += `<div class="d-flex justify-content-center align-items-center">
+                                            <button data-namespace="${e.namespace}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-success btn-color-gray-800" onclick="extension.install(this, event)">
+                                                <i class="la la-download fs-2 position-absolute"></i>
+                                                <span class="ps-9">${getLocalize('extension.language.buttons.install')}</span>
+                                            </button>
+                                        </div>`
                         }
+
+                        buttons += '</div>'
+
+                        return buttons
                     },
                     sortable: false
                 }
