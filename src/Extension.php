@@ -3,6 +3,7 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
@@ -274,19 +275,21 @@ class Extension
             throw new ExtensionHaveSomePluginException($name);
         }
 
-        if (method_exists($namespace, 'uninstall')) {
-            $namespace::uninstall();
-        }
+        DB::transaction(function () use ($namespace, $extension_model) {
+            if (method_exists($namespace, 'uninstall')) {
+                $namespace::uninstall();
+            }
 
-        $extension_model->plugins()->get()->each(function ($plugin) {
-            event(new PluginDeleteEvent($plugin));
+            $extension_model->plugins()->get()->each(function ($plugin) {
+                event(new PluginDeleteEvent($plugin));
 
-            $plugin->delete();
+                $plugin->delete();
+            });
+
+            $extension_model->delete();
+
+            event(new ExtensionUninstallEvent($extension_model));
         });
-
-        $extension_model->delete();
-
-        event(new ExtensionUninstallEvent($extension_model));
 
         return [
             'ok' => true,
@@ -344,7 +347,7 @@ class Extension
             }
         });
 
-        if($flag) {
+        if ($flag) {
             File::deleteDirectory($folder);
         } else {
             throw new ExtensionNotDeletableException($name);
