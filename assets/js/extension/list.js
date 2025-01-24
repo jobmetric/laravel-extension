@@ -37,56 +37,98 @@ const extension = {
     uninstall: function(element, e) {
         e.preventDefault()
 
-        let namespace = $(element).data('namespace')
+        Swal.fire({
+            icon: 'warning',
+            title: getLocalize('language.panelio.button.are_you_sure'),
+            text: getLocalize('extension.language.confirm.uninstall'),
+            showCancelButton: true,
+            confirmButtonText: getLocalize('extension.language.confirm.button.are_you_sure_to_uninstall'),
+            cancelButtonText: getLocalize('language.panelio.button.cancel'),
+            allowOutsideClick: false,
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let namespace = $(element).data('namespace')
 
-        $.ajax({
-            url: getLocalize('extension.routes.uninstall'),
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                namespace: namespace
-            },
-            beforeSend: function () {
-                $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
-            },
-            complete: function () {
-                $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.buttons.uninstall'))
-            },
-            success: function(json) {
-                toastr.success(json.message)
+                $.ajax({
+                    url: getLocalize('extension.routes.uninstall'),
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        namespace: namespace
+                    },
+                    beforeSend: function () {
+                        $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
+                    },
+                    complete: function () {
+                        $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.buttons.uninstall'))
+                    },
+                    success: function(json) {
+                        toastr.success(json.message)
 
-                extension.list(json.extensions)
-            },
-            error: function (xhr) {
-                toastr.error(xhr.responseJSON.message)
+                        extension.list(json.extensions)
+                    },
+                    error: function (xhr) {
+                        toastr.error(xhr.responseJSON.message)
+                    }
+                })
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: getLocalize('language.panelio.button.it_went_well'),
+                    showConfirmButton: true,
+                    confirmButtonText: getLocalize('language.panelio.button.realized'),
+                    allowOutsideClick: false
+                })
             }
         })
     },
     delete: function(element, e) {
         e.preventDefault()
 
-        let namespace = $(element).data('namespace')
+        Swal.fire({
+            icon: 'warning',
+            title: getLocalize('language.panelio.button.are_you_sure'),
+            text: getLocalize('extension.language.confirm.delete'),
+            showCancelButton: true,
+            confirmButtonText: getLocalize('extension.language.confirm.button.are_you_sure_to_delete'),
+            cancelButtonText: getLocalize('language.panelio.button.cancel'),
+            allowOutsideClick: false,
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let namespace = $(element).data('namespace')
 
-        $.ajax({
-            url: getLocalize('extension.routes.delete'),
-            method: 'POST',
-            dataType: 'json',
-            data: {
-                namespace: namespace
-            },
-            beforeSend: function () {
-                $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
-            },
-            complete: function () {
-                $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.delete'))
-            },
-            success: function(json) {
-                toastr.success(json.message)
+                $.ajax({
+                    url: getLocalize('extension.routes.delete'),
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        namespace: namespace
+                    },
+                    beforeSend: function () {
+                        $(element).attr('disabled', true).find('span').text(getLocalize('language.panelio.button.loading'))
+                    },
+                    complete: function () {
+                        $(element).attr('disabled', false).find('span').text(getLocalize('extension.language.delete'))
+                    },
+                    success: function(json) {
+                        toastr.success(json.message)
 
-                extension.list(json.extensions)
-            },
-            error: function (xhr) {
-                toastr.error(xhr.responseJSON.message)
+                        extension.list(json.extensions)
+                    },
+                    error: function (xhr) {
+                        toastr.error(xhr.responseJSON.message)
+                    }
+                })
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: getLocalize('language.panelio.button.it_went_well'),
+                    showConfirmButton: true,
+                    confirmButtonText: getLocalize('language.panelio.button.realized'),
+                    allowOutsideClick: false
+                })
             }
         })
     }
