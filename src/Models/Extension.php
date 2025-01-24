@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @method static ExtensionName(string $extension, string $name)
  * @method static ExtensionNamespace(string $namespace)
  * @method static create(array $array)
+ * @method static find(int|null $extension_id)
  */
 class Extension extends Model
 {
