@@ -20,9 +20,9 @@ return new class extends Migration {
              * Extension ID is the ID of the extension.
              */
 
-            $table->string('title')->index();
+            $table->string('name')->index();
             /**
-             * This is the title of each Extension.
+             * This is the name of each Extension.
              */
 
             $table->json('fields')->nullable();

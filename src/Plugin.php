@@ -47,16 +47,16 @@ class Plugin
      *
      * @return QueryBuilder
      */
-    private function query(array $filter = [], array $with = []): QueryBuilder
+    public function query(array $filter = [], array $with = []): QueryBuilder
     {
-        $fields = ['id', 'extension_id', 'title', 'fields', 'status', 'created_at', 'updated_at'];
+        $fields = ['id', 'extension_id', 'name', 'fields', 'status', 'created_at', 'updated_at'];
 
         $query = QueryBuilder::for(PluginModel::class)
             ->allowedFields($fields)
             ->allowedSorts($fields)
             ->allowedFilters($fields)
             ->defaultSort([
-                'title'
+                'name'
             ])
             ->where($filter);
 
@@ -150,10 +150,10 @@ class Plugin
         $fields->add([
             'extension' => $extension,
             'extension_name' => $name,
-            'name' => 'title',
+            'name' => 'name',
             'type' => 'text',
             'required' => true,
-            'value' => ($plugin_info) ? $plugin_info->title : null,
+            'value' => ($plugin_info) ? $plugin_info->name : null,
         ]);
 
         $fields->add([
@@ -226,7 +226,7 @@ class Plugin
             $plugin_model = new PluginModel;
 
             $plugin_model->extension_id = $extension_model->id;
-            $plugin_model->title = $data['title'];
+            $plugin_model->name = $data['name'];
             $plugin_model->fields = $data['fields'] ?? [];
             $plugin_model->status = $data['status'];
 
@@ -272,7 +272,7 @@ class Plugin
         } else {
             $data = $validator->validated();
 
-            $plugin_model->title = $data['title'];
+            $plugin_model->name = $data['name'];
             $plugin_model->fields = $data['fields'] ?? [];
             $plugin_model->status = $data['status'];
 

@@ -21,7 +21,7 @@ class PluginFactory extends Factory
     {
         return [
             'extension_id' => null,
-            'title' => $this->faker->word,
+            'name' => $this->faker->word,
             'fields' => null,
             'status' => $this->faker->boolean
         ];
@@ -42,16 +42,16 @@ class PluginFactory extends Factory
     }
 
     /**
-     * set title
+     * set name
      *
-     * @param string $title
+     * @param string $name
      *
      * @return static
      */
-    public function setName(string $title): static
+    public function setName(string $name): static
     {
         return $this->state(fn(array $attributes) => [
-            'title' => $title
+            'name' => $name
         ]);
     }
 

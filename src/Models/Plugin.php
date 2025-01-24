@@ -14,7 +14,7 @@ use JobMetric\PackageCore\Models\HasBooleanStatus;
  * @property int id
  * @property Extension extension
  * @property string extension_id
- * @property string title
+ * @property string name
  * @property string fields
  * @property bool status
  * @property Carbon created_at
@@ -27,7 +27,7 @@ class Plugin extends Model
 
     protected $fillable = [
         'extension_id',
-        'title',
+        'name',
         'fields',
         'status'
     ];
@@ -39,7 +39,7 @@ class Plugin extends Model
      */
     protected $casts = [
         'extension_id' => 'integer',
-        'title' => 'string',
+        'name' => 'string',
         'fields' => 'array',
         'status' => 'boolean'
     ];

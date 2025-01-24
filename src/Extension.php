@@ -20,7 +20,6 @@ use JobMetric\Extension\Exceptions\ExtensionNotDeletableException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionNotUninstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
-use JobMetric\Extension\Exceptions\ExtensionTypeInvalidException;
 use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
@@ -218,7 +217,7 @@ class Extension
             }
 
             $extension_model->plugins()->create([
-                'title' => $extension_information['title'],
+                'name' => $extension_information['title'],
                 'fields' => $fields,
                 'status' => true,
             ]);
