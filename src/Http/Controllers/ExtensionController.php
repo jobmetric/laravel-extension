@@ -58,33 +58,41 @@ class ExtensionController extends Controller
                 ]),
             ],
             'language' => [
-                'website' => trans('extension::base.list.columns.website'),
-                'email' => trans('extension::base.list.columns.email'),
-                'namespace' => trans('extension::base.list.columns.namespace'),
-                'license' => trans('extension::base.list.columns.license'),
-                'delete_note' => trans('extension::base.list.columns.delete_note'),
-                'delete' => trans('extension::base.list.columns.delete'),
-                'creation_at' => trans('extension::base.list.columns.creation_at'),
-                'installed_at' => trans('extension::base.list.columns.installed_at'),
-                'updated_at' => trans('extension::base.list.columns.updated_at'),
-                'not_installed' => trans('extension::base.list.columns.not_installed'),
-                'simple' => trans('extension::base.list.columns.simple'),
-                'multiple' => trans('extension::base.list.columns.multiple'),
+                'website' => trans('extension::base.list.extension.columns.website'),
+                'email' => trans('extension::base.list.extension.columns.email'),
+                'namespace' => trans('extension::base.list.extension.columns.namespace'),
+                'license' => trans('extension::base.list.extension.columns.license'),
+                'delete_note' => trans('extension::base.list.extension.columns.delete_note'),
+                'delete' => trans('extension::base.list.extension.columns.delete'),
+                'creation_at' => trans('extension::base.list.extension.columns.creation_at'),
+                'installed_at' => trans('extension::base.list.extension.columns.installed_at'),
+                'updated_at' => trans('extension::base.list.extension.columns.updated_at'),
+                'not_installed' => trans('extension::base.list.extension.columns.not_installed'),
+                'simple' => trans('extension::base.list.extension.columns.simple'),
+                'multiple' => trans('extension::base.list.extension.columns.multiple'),
                 'buttons' => [
-                    'install' => trans('extension::base.list.buttons.install'),
-                    'uninstall' => trans('extension::base.list.buttons.uninstall'),
-                    'add_plugin' => trans('extension::base.list.buttons.add_plugin'),
-                    'plugin_list' => trans('extension::base.list.buttons.plugin_list'),
+                    'install' => trans('extension::base.list.extension.buttons.install'),
+                    'uninstall' => trans('extension::base.list.extension.buttons.uninstall'),
+                    'add_plugin' => trans('extension::base.list.extension.buttons.add_plugin'),
+                    'plugin_list' => trans('extension::base.list.extension.buttons.plugin_list'),
+                ],
+                'confirm' => [
+                    'uninstall' => trans('extension::base.list.extension.message.confirm.uninstall'),
+                    'delete' => trans('extension::base.list.extension.message.confirm.delete'),
+                    'button' => [
+                        'are_you_sure_to_uninstall' => trans('extension::base.list.extension.buttons.are_you_sure_to_uninstall'),
+                        'are_you_sure_to_delete' => trans('extension::base.list.extension.buttons.are_you_sure_to_delete'),
+                    ],
                 ],
             ],
             'extensions' => Extension::all($type)
         ]);
 
-        DomiScript('assets/vendor/extension/js/list.js');
+        DomiScript('assets/vendor/extension/js/extension/list.js');
 
         $data['type'] = $type;
 
-        return view('extension::list', $data);
+        return view('extension::extension.list', $data);
     }
 
     /**
