@@ -29,6 +29,7 @@ return [
         "extension_class_name_not_match" => "نام کلاس افزونه :name با نام کلاس اصلی مطابقت ندارد.",
         "extension_dont_have_contract" => "افزونه :name دارای قرارداد JobMetric\Extension\Contracts\ExtensionContract نیست.",
         "extension_have_some_plugin" => "افزونه :name دارای چند افزونه است. لطفا ابتدا افزونه را حذف نصب کنید.",
+        "extension_not_found" => "افزونه یافت نشد.",
         "plugin_not_found" => "افزونه با شناسه :plugin_id پیدا نشد.",
         "plugin_not_multiple" => "افزونه :extension/:name دارای چندین افزونه نیست.",
     ],
