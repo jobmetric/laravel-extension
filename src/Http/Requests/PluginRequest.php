@@ -4,12 +4,14 @@ namespace JobMetric\Extension\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use JobMetric\Location\Models\LocationProvince;
-use JobMetric\Location\Rules\CheckExistNameRule;
+use JobMetric\Extension\Exceptions\ExtensionNotFoundException;
+use JobMetric\Extension\Models\Extension;
+use Throwable;
 
 class PluginRequest extends FormRequest
 {
     public array $fields = [];
+    public int|null $extension_id = null;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -23,19 +25,48 @@ class PluginRequest extends FormRequest
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array|string>
+     * @throws Throwable
      */
     public function rules(): array
     {
-        $rules = [
-            'title' => 'string|min:3|max:255',
-            'status' => 'boolean',
-        ];
+        $parameters = request()->route()->parameters();
+
+        $info = $parameters['jm_extension']?->info;
+
+        if (empty($info)) {
+            if (empty($this->extension_id)) {
+                throw new ExtensionNotFoundException;
+            }
+
+            $extension = Extension::find($this->extension_id);
+
+            if (!$extension) {
+                throw new ExtensionNotFoundException;
+            }
+
+            $info = $extension->info;
+        }
+
+        $multiple = $info['multiple'] ?? false;
+
+        foreach ($info['fields'] as $field) {
+            $this->fields[$field['name']] = [
+                'validation' => $field['validation'] ?? 'string|nullable|sometimes',
+                'label' => $field['label'] ?? '',
+            ];
+        }
+
+        $rules['status'] = 'boolean';
+
+        if ($multiple) {
+            $rules['name'] = 'required|string|max:255';
+        }
 
         if (!empty($this->fields)) {
             $rules['fields'] = 'array';
 
-            foreach ($this->fields as $key => $validation) {
-                $rules['fields.' . $key] = $validation;
+            foreach ($this->fields as $key => $field) {
+                $rules['fields.' . $key] = $field['validation'];
             }
         }
 
@@ -43,15 +74,35 @@ class PluginRequest extends FormRequest
     }
 
     /**
-     * Set fields for validation
+     * Set the extension id.
      *
-     * @param array $fields
-     * @return static
+     * @param int $extension_id
+     *
+     * @return $this
      */
-    public function setFields(array $fields): static
+    public function setExtensionId(int $extension_id): self
     {
-        $this->fields = $fields;
+        $this->extension_id = $extension_id;
 
         return $this;
+    }
+
+    /**
+     * Get custom attributes for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        $attributes = [
+            'status' => trans('package-core::base.components.boolean_status.label'),
+            'name' => trans('extension::base.form.plugin.fields.name.title')
+        ];
+
+        foreach ($this->fields as $key => $field) {
+            $attributes['fields.' . $key] = $field['label'] ? trans($field['label']) : $key;
+        }
+
+        return $attributes;
     }
 }
