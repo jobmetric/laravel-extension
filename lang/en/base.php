@@ -42,6 +42,7 @@ return [
         ],
 
         "plugin" => [
+            "stored" => "The plugin has been stored successfully.",
             "added" => "The plugin has been added.",
             "edited" => "The plugin has been edited.",
             "deleted" => "The plugin has been deleted.",
