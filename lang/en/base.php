@@ -94,6 +94,16 @@ return [
                 "are_you_sure_to_delete" => "Yes, I'm sure to delete",
             ],
         ],
+        "plugin" => [
+            "label" => "Plugins of :name Extension",
+            "description" => "You can manage the plugins of the :name extension here.",
+            "filters" => [
+                "name" => [
+                    "title" => "Plugin Name",
+                    "placeholder" => "Enter plugin name",
+                ]
+            ],
+        ],
     ],
 
     "extension" => [

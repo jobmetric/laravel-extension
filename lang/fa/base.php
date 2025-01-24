@@ -94,6 +94,16 @@ return [
                 "are_you_sure_to_delete" => "بله، پاک کن بره",
             ],
         ],
+        "plugin" => [
+            "label" => "پلاگین‌های افزونه :name",
+            "description" => "در این قسمت می‌توانید پلاگین‌های افزونه :name را مدیریت کنید.",
+            "filters" => [
+                "name" => [
+                    "title" => "نام پلاگین",
+                    "placeholder" => "جستجو بر اساس نام پلاگین",
+                ]
+            ],
+        ],
     ],
 
     "extension" => [
