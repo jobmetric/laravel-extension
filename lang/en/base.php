@@ -106,6 +106,20 @@ return [
         ],
     ],
 
+    "form" => [
+        "plugin" => [
+            "create" => [
+                "title" => "Create Plugin of :name Extension",
+            ],
+            "fields" => [
+                "name" => [
+                    "title" => "Plugin Name",
+                    "placeholder" => "Enter plugin name",
+                ],
+            ],
+        ],
+    ],
+
     "extension" => [
         "default_description" => "This is a test extension. 😉",
     ],
