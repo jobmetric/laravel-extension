@@ -5,10 +5,12 @@ namespace JobMetric\Extension;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use JobMetric\Extension\Events\PluginAddEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
 use JobMetric\Extension\Events\PluginEditEvent;
+use JobMetric\Extension\Events\PluginStoreEvent;
 use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
@@ -17,6 +19,7 @@ use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use JobMetric\Taxonomy\Http\Resources\TaxonomyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
@@ -94,6 +97,52 @@ class Plugin
         return PluginResource::collection(
             $this->query($filter, $with)->get()
         );
+    }
+
+    /**
+     * Store a newly created plugin in storage.
+     *
+     * @param ExtensionModel $extension
+     * @param array $data
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function store(ExtensionModel $extension, array $data): array
+    {
+        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension->id)->rules());
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+        }
+
+        return DB::transaction(function () use ($extension, $data) {
+            $plugin = new PluginModel;
+
+            $plugin->extension_id = $extension->id;
+            $plugin->name = $data['name'];
+            $plugin->fields = $data['fields'] ?? [];
+            $plugin->status = $data['status'];
+
+            $plugin->save();
+
+            event(new PluginStoreEvent($plugin));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.stored'),
+                'data' => PluginResource::make($plugin),
+                'status' => 201
+            ];
+        });
     }
 
     /**

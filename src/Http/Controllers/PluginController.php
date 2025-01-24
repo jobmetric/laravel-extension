@@ -7,10 +7,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Facades\Plugin;
+use JobMetric\Extension\Http\Requests\PluginRequest;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension;
 use JobMetric\Language\Facades\Language;
-use JobMetric\Metadata\ServiceType\Metadata as MetadataServiceType;
 use JobMetric\Panelio\Facades\Breadcrumb;
 use JobMetric\Panelio\Facades\Button;
 use JobMetric\Panelio\Facades\Datatable;
@@ -22,7 +22,6 @@ use JobMetric\Taxonomy\Facades\TaxonomyType;
 use JobMetric\Taxonomy\Http\Requests\SetTranslationRequest;
 use JobMetric\Taxonomy\Http\Requests\StoreTaxonomyRequest;
 use JobMetric\Taxonomy\Http\Requests\UpdateTaxonomyRequest;
-use JobMetric\Taxonomy\Http\Resources\TaxonomyResource;
 use JobMetric\Taxonomy\Models\Taxonomy as TaxonomyModel;
 use Throwable;
 
@@ -112,33 +111,32 @@ class PluginController extends Controller
      * @param string $panel
      * @param string $section
      * @param string $type
+     * @param Extension $extension
      *
      * @return View
      */
-    public function create(string $panel, string $section, string $type): View
+    public function create(string $panel, string $section, string $type, Extension $extension): View
     {
         $data['mode'] = 'create';
 
-        $serviceType = TaxonomyType::type($type);
+        $serviceType = ExtensionType::type($type);
 
-        $data['label'] = $serviceType->getLabel();
-        $data['description'] = $serviceType->getDescription();
-        $data['translation'] = $serviceType->getTranslation();
-        $data['media'] = $serviceType->getMedia();
-        $data['metadata'] = $serviceType->getMetadata();
-        $data['hasUrl'] = $serviceType->hasUrl();
-        $data['hasHierarchical'] = $serviceType->hasHierarchical();
-        $data['hasBaseMedia'] = $serviceType->hasBaseMedia();
+        $extensionLabel = $serviceType->getLabel();
 
-        DomiTitle(trans('taxonomy::base.form.create.title', [
-            'type' => $data['label']
+        $data['label'] = trans('extension::base.list.plugin.label', [
+            'name' => trans($extension->info['title'])
+        ]);
+
+        DomiTitle(trans('extension::base.form.plugin.create.title', [
+            'name' => trans($extension->info['title'])
         ]));
 
         // Add breadcrumb
         add_breadcrumb_base($panel, $section);
+        Breadcrumb::add($extensionLabel, $this->route['extension']['index']);
         Breadcrumb::add($data['label'], $this->route['index']);
-        Breadcrumb::add(trans('taxonomy::base.form.create.title', [
-            'type' => $data['label']
+        Breadcrumb::add(trans('extension::base.form.plugin.create.title', [
+            'name' => trans($extension->info['title'])
         ]));
 
         // add button
@@ -147,35 +145,36 @@ class PluginController extends Controller
         Button::saveClose();
         Button::cancel($this->route['index']);
 
-        DomiScript('assets/vendor/taxonomy/js/form.js');
+        DomiScript('assets/vendor/extension/js/plugin/form.js');
 
         $data['type'] = $type;
         $data['action'] = $this->route['store'];
 
-        $data['taxonomies'] = Taxonomy::all($type);
+        $data['fields'] = $extension->info['fields'] ?? [];
 
-        return view('taxonomy::form', $data);
+        return view('extension::plugin.form', $data);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param StoreTaxonomyRequest $request
+     * @param PluginRequest $request
      * @param string $panel
      * @param string $section
      * @param string $type
+     * @param Extension $extension
      *
      * @return RedirectResponse
      * @throws Throwable
      */
-    public function store(StoreTaxonomyRequest $request, string $panel, string $section, string $type): RedirectResponse
+    public function store(PluginRequest $request, string $panel, string $section, string $type, Extension $extension): RedirectResponse
     {
         $form_data = $request->all();
 
-        $taxonomy = Taxonomy::store($request->validated());
+        $plugin = Plugin::store($extension, $request->validated());
 
-        if ($taxonomy['ok']) {
-            $this->alert($taxonomy['message']);
+        if ($plugin['ok']) {
+            $this->alert($plugin['message']);
 
             if ($form_data['save'] == 'save.new') {
                 return back();
@@ -186,15 +185,16 @@ class PluginController extends Controller
             }
 
             // btn save
-            return redirect()->route('taxonomy.{type}.edit', [
+            return redirect()->route('extension.plugin.edit', [
                 'panel' => $panel,
                 'section' => $section,
                 'type' => $type,
-                'jm_taxonomy' => $taxonomy['data']->id
+                'jm_extension' => $extension->id,
+                'jm_plugin' => $plugin['data']->id
             ]);
         }
 
-        $this->alert($taxonomy['message'], 'danger');
+        $this->alert($plugin['message'], 'danger');
 
         return back();
     }
