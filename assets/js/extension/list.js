@@ -326,7 +326,7 @@ loadScriptsSequentially([
                                             <div class="d-flex justify-content-center align-items-center">
                                                 <a href="${e.plugins_link}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800 me-3">
                                                     <i class="la la-bars fs-2 position-absolute"></i>
-                                                    <span class="ps-9">${getLocalize('extension.language.buttons.plugin_list')}</span>
+                                                    <span class="ps-9">${getLocalize('extension.language.buttons.plugin_list')} ${e.plugin_count ? `(${e.plugin_count})` : ''}</span>
                                                 </a>
                                             </div>`
                             } else {
