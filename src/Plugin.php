@@ -11,7 +11,10 @@ use JobMetric\Extension\Events\PluginAddEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
 use JobMetric\Extension\Events\PluginEditEvent;
 use JobMetric\Extension\Events\PluginStoreEvent;
+use JobMetric\Extension\Events\PluginUpdateEvent;
+use JobMetric\Extension\Exceptions\ExtensionNotFoundException;
 use JobMetric\Extension\Exceptions\PluginNotFoundException;
+use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
 use JobMetric\Extension\Http\Requests\PluginRequest;
@@ -19,7 +22,6 @@ use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
-use JobMetric\Taxonomy\Http\Resources\TaxonomyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
@@ -102,15 +104,24 @@ class Plugin
     /**
      * Store a newly created plugin in storage.
      *
-     * @param ExtensionModel $extension
+     * @param int $extension_id
      * @param array $data
      *
      * @return array
      * @throws Throwable
      */
-    public function store(ExtensionModel $extension, array $data): array
+    public function store(int $extension_id, array $data): array
     {
-        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension->id)->rules());
+        /**
+         * @var ExtensionModel $extension
+         */
+        $extension = ExtensionModel::find($extension_id);
+
+        if (!$extension) {
+            throw new ExtensionNotFoundException;
+        }
+
+        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension_id)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -124,10 +135,10 @@ class Plugin
             $data = $validator->validated();
         }
 
-        return DB::transaction(function () use ($extension, $data) {
+        return DB::transaction(function () use ($extension_id, $data) {
             $plugin = new PluginModel;
 
-            $plugin->extension_id = $extension->id;
+            $plugin->extension_id = $extension_id;
             $plugin->name = $data['name'];
             $plugin->fields = $data['fields'] ?? [];
             $plugin->status = $data['status'];
@@ -141,6 +152,80 @@ class Plugin
                 'message' => trans('extension::base.messages.plugin.stored'),
                 'data' => PluginResource::make($plugin),
                 'status' => 201
+            ];
+        });
+    }
+
+    /**
+     * Update the specified extension plugin.
+     *
+     * @param int $extension_id
+     * @param int $plugin_id
+     * @param array $data
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function update(int $extension_id, int $plugin_id, array $data): array
+    {
+        /**
+         * @var ExtensionModel $extension
+         */
+        $extension = ExtensionModel::find($extension_id);
+
+        if (!$extension) {
+            throw new ExtensionNotFoundException;
+        }
+
+        /**
+         * @var PluginModel $plugin
+         */
+        $plugin = PluginModel::find($plugin_id);
+
+        if (!$plugin) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+
+        if ($plugin->extension_id !== $extension_id) {
+            throw new PluginNotMatchExtensionException($extension_id, $plugin_id);
+        }
+
+        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension_id)->rules());
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+        }
+
+        return DB::transaction(function () use ($plugin, $data) {
+            if (array_key_exists('name', $data)) {
+                $plugin->name = $data['name'];
+            }
+
+            if (array_key_exists('status', $data)) {
+                $plugin->status = $data['status'];
+            }
+
+            if (array_key_exists('fields', $data)) {
+                $plugin->fields = $data['fields'];
+            }
+
+            $plugin->save();
+
+            event(new PluginUpdateEvent($plugin));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.updated'),
+                'data' => PluginResource::make($plugin),
+                'status' => 200
             ];
         });
     }
