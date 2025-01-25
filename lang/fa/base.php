@@ -32,6 +32,7 @@ return [
         "extension_not_found" => "افزونه یافت نشد.",
         "plugin_not_found" => "افزونه با شناسه :plugin_id پیدا نشد.",
         "plugin_not_multiple" => "افزونه :extension/:name دارای چندین افزونه نیست.",
+        "plugin_not_match_extension" => "پلاگین :plugin_id با افزونه :extension_id مطابقت ندارد.",
     ],
 
     "messages" => [
@@ -44,6 +45,7 @@ return [
 
         "plugin" => [
             "stored" => "پلاگین با موفقیت ذخیره شد.",
+            "updated" => "پلاگین با موفقیت به روز شد.",
             "added" => "پلاگین با موفقیت اضافه شد.",
             "edited" => "پلاگین با موفقیت ویرایش شد.",
             "deleted" => "پلاگین با موفقیت حذف شد.",
@@ -112,6 +114,9 @@ return [
         "plugin" => [
             "create" => [
                 "title" => "ایجاد پلاگین برای افزونه :name",
+            ],
+            "edit" => [
+                "title" => "ویرایش پلاگین شماره :number از افزونه :name",
             ],
             "fields" => [
                 "name" => [

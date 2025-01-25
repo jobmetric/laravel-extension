@@ -32,6 +32,7 @@ return [
         "extension_not_found" => "The extension not found.",
         "plugin_not_found" => "The plugin with ID :plugin_id not found.",
         "plugin_not_multiple" => "The :extension/:name extension dont have multiple plugin.",
+        "plugin_not_match_extension" => "The plugin :plugin_id not match with extension :extension_id.",
     ],
 
     "messages" => [
@@ -44,6 +45,7 @@ return [
 
         "plugin" => [
             "stored" => "The plugin has been stored successfully.",
+            "updated" => "The plugin has been updated successfully.",
             "added" => "The plugin has been added.",
             "edited" => "The plugin has been edited.",
             "deleted" => "The plugin has been deleted.",
@@ -112,6 +114,9 @@ return [
         "plugin" => [
             "create" => [
                 "title" => "Create Plugin of :name Extension",
+            ],
+            "edit" => [
+                "title" => "Edit Plugin Number :number of :name Extension",
             ],
             "fields" => [
                 "name" => [
