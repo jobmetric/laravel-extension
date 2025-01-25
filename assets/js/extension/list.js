@@ -332,7 +332,7 @@ loadScriptsSequentially([
                             } else {
                                 buttons += `<div class="d-flex justify-content-center align-items-center">
                                                 <a href="${e.edit_link}" class="btn btn-sm btn-outline btn-outline-dashed bg-light-danger btn-color-gray-800 me-3">
-                                                    <i class="la la-times fs-2 position-absolute"></i>
+                                                    <i class="la la-edit fs-2 position-absolute"></i>
                                                     <span class="ps-9">${getLocalize('language.panelio.button.edit')}</span>
                                                 </a>
                                             </div>`
