@@ -12,13 +12,13 @@ use JobMetric\PackageCore\Models\HasBooleanStatus;
  * JobMetric\Extension\Models\Extension
  *
  * @property int id
- * @property Extension extension
- * @property string extension_id
+ * @property int extension_id
  * @property string name
  * @property string fields
  * @property bool status
  * @property Carbon created_at
  * @property Carbon updated_at
+ * @property Extension extension
  * @method static find(int $plugin_id)
  */
 class Plugin extends Model
