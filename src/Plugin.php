@@ -17,7 +17,8 @@ use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
-use JobMetric\Extension\Http\Requests\PluginRequest;
+use JobMetric\Extension\Http\Requests\StorePluginRequest;
+use JobMetric\Extension\Http\Requests\UpdatePluginRequest;
 use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
@@ -121,7 +122,7 @@ class Plugin
             throw new ExtensionNotFoundException;
         }
 
-        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension_id)->rules());
+        $validator = Validator::make($data, (new StorePluginRequest)->setExtensionId($extension_id)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -190,7 +191,7 @@ class Plugin
             throw new PluginNotMatchExtensionException($extension_id, $plugin_id);
         }
 
-        $validator = Validator::make($data, (new PluginRequest)->setExtensionId($extension_id)->rules());
+        $validator = Validator::make($data, (new UpdatePluginRequest)->setExtensionId($extension_id)->setPlugin($plugin)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -344,7 +345,7 @@ class Plugin
 
         $fields_validation = $this->fieldsValidation($extension_model);
 
-        $validator = Validator::make($fields, (new PluginRequest)->setFields($fields_validation)->rules());
+        $validator = Validator::make($fields, (new StorePluginRequest)->setFields($fields_validation)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -392,7 +393,7 @@ class Plugin
 
         $fields_validation = $this->fieldsValidation($plugin_model->extension);
 
-        $validator = Validator::make($fields, (new PluginRequest)->setFields($fields_validation)->rules());
+        $validator = Validator::make($fields, (new StorePluginRequest)->setFields($fields_validation)->rules());
 
         if ($validator->fails()) {
             $errors = $validator->errors()->all();

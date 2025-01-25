@@ -15,7 +15,7 @@
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="tab_general">
                     <div class="d-flex flex-column gap-7 gap-lg-10">
-                        @if($extension->info['multiple'] ?? false)
+                        @if($multiple)
                             <!--begin::Information-->
                             <div class="card card-flush py-4">
                                 <div class="card-header">

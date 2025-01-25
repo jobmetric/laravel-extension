@@ -8,7 +8,7 @@ use JobMetric\Extension\Exceptions\ExtensionNotFoundException;
 use JobMetric\Extension\Models\Extension;
 use Throwable;
 
-class PluginRequest extends FormRequest
+class StorePluginRequest extends FormRequest
 {
     public array $fields = [];
     public int|null $extension_id = null;
@@ -32,8 +32,6 @@ class PluginRequest extends FormRequest
         $parameters = request()->route()->parameters();
 
         $extension = $parameters['jm_extension'] ?? null;
-        $plugin = $parameters['jm_plugin'] ?? null;
-
         $info = $extension?->info;
 
         if (empty($info)) {
@@ -62,11 +60,7 @@ class PluginRequest extends FormRequest
         $rules['status'] = 'boolean';
 
         if ($multiple) {
-            if ($plugin) {
-                $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,' . $plugin->id . ',id,extension_id,' . $plugin->extension_id;
-            } else {
-                $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,NULL,id,extension_id,' . $extension->id;
-            }
+            $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,NULL,id,extension_id,' . $extension->id;
         }
 
         if (!empty($this->fields)) {

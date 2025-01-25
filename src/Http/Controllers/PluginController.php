@@ -8,7 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Facades\ExtensionType;
 use JobMetric\Extension\Facades\Plugin as PluginFacade;
-use JobMetric\Extension\Http\Requests\PluginRequest;
+use JobMetric\Extension\Http\Requests\StorePluginRequest;
+use JobMetric\Extension\Http\Requests\UpdatePluginRequest;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension;
 use JobMetric\Extension\Models\Plugin;
@@ -19,7 +20,6 @@ use JobMetric\Panelio\Http\Controllers\Controller;
 use JobMetric\Panelio\Http\Requests\ExportActionListRequest;
 use JobMetric\Panelio\Http\Requests\ImportActionListRequest;
 use JobMetric\Taxonomy\Facades\Taxonomy;
-use JobMetric\Taxonomy\Facades\TaxonomyType;
 use JobMetric\Taxonomy\Http\Requests\SetTranslationRequest;
 use Throwable;
 
@@ -137,6 +137,8 @@ class PluginController extends Controller
             'name' => trans($extension->info['title'])
         ]));
 
+        $data['multiple'] = $extension->info['multiple'] ?? false;
+
         // add button
         Button::save();
         Button::saveNew();
@@ -148,15 +150,13 @@ class PluginController extends Controller
 
         $data['fields'] = $extension->info['fields'] ?? [];
 
-        $data['extension'] = $extension;
-
         return view('extension::plugin.form', $data);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param PluginRequest $request
+     * @param StorePluginRequest $request
      * @param string $panel
      * @param string $section
      * @param string $type
@@ -165,7 +165,7 @@ class PluginController extends Controller
      * @return RedirectResponse
      * @throws Throwable
      */
-    public function store(PluginRequest $request, string $panel, string $section, string $type, Extension $extension): RedirectResponse
+    public function store(StorePluginRequest $request, string $panel, string $section, string $type, Extension $extension): RedirectResponse
     {
         $form_data = $request->all();
 
@@ -241,9 +241,13 @@ class PluginController extends Controller
             'number' => $plugin->id
         ]));
 
+        $data['multiple'] = $extension->info['multiple'] ?? false;
+
         // add button
         Button::save();
-        Button::saveNew();
+        if ($data['multiple']) {
+            Button::saveNew();
+        }
         Button::saveClose();
         Button::cancel($this->route['index']);
 
@@ -258,7 +262,6 @@ class PluginController extends Controller
 
         $data['fields'] = $extension->info['fields'] ?? [];
 
-        $data['extension'] = $extension;
         $data['plugin'] = $plugin;
 
         return view('extension::plugin.form', $data);
@@ -267,7 +270,7 @@ class PluginController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param PluginRequest $request
+     * @param UpdatePluginRequest $request
      * @param string $panel
      * @param string $section
      * @param string $type
@@ -277,7 +280,7 @@ class PluginController extends Controller
      * @return RedirectResponse
      * @throws Throwable
      */
-    public function update(PluginRequest $request, string $panel, string $section, string $type, Extension $extension, Plugin $plugin): RedirectResponse
+    public function update(UpdatePluginRequest $request, string $panel, string $section, string $type, Extension $extension, Plugin $plugin): RedirectResponse
     {
         $form_data = $request->all();
 
@@ -291,7 +294,12 @@ class PluginController extends Controller
             }
 
             if ($form_data['save'] == 'save.close') {
-                return redirect()->to($this->route['index']);
+                $multiple = $extension->info['multiple'] ?? false;
+                if ($multiple) {
+                    return redirect()->to($this->route['index']);
+                } else {
+                    return redirect()->to($this->route['extension']['index']);
+                }
             }
 
             // btn save
@@ -323,9 +331,9 @@ class PluginController extends Controller
     public function deletes(array $ids, mixed $params, string &$alert = null, string &$danger = null): bool
     {
         $type = $params[2] ?? null;
-        $extension = $params[3] ?? null;
-
         ExtensionType::type($type);
+
+        $extension = $params[3] ?? null;
 
         try {
             foreach ($ids as $id) {
@@ -359,21 +367,22 @@ class PluginController extends Controller
     public function changeStatus(array $ids, bool $value, mixed $params, string &$alert = null, string &$danger = null): bool
     {
         $type = $params[2] ?? null;
+        ExtensionType::type($type);
 
-        $serviceType = TaxonomyType::type($type);
+        $extension = $params[3] ?? null;
 
         try {
             foreach ($ids as $id) {
-                Taxonomy::update($id, ['status' => $value]);
+                PluginFacade::update($extension->id, $id, ['status' => $value]);
             }
 
             if ($value) {
-                $alert = trans_choice('taxonomy::base.messages.status.enable', count($ids), [
-                    'taxonomy' => $serviceType->getLabel()
+                $alert = trans_choice('extension::base.messages.plugin.status.enable', count($ids), [
+                    'extension' => trans($extension->info['title'])
                 ]);
             } else {
-                $alert = trans_choice('taxonomy::base.messages.status.disable', count($ids), [
-                    'taxonomy' => $serviceType->getLabel()
+                $alert = trans_choice('extension::base.messages.plugin.status.disable', count($ids), [
+                    'extension' => trans($extension->info['title'])
                 ]);
             }
 
