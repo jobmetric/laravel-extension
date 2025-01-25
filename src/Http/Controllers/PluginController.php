@@ -5,12 +5,13 @@ namespace JobMetric\Extension\Http\Controllers;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Facades\ExtensionType;
-use JobMetric\Extension\Facades\Plugin;
+use JobMetric\Extension\Facades\Plugin as PluginFacade;
 use JobMetric\Extension\Http\Requests\PluginRequest;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension;
-use JobMetric\Language\Facades\Language;
+use JobMetric\Extension\Models\Plugin;
 use JobMetric\Panelio\Facades\Breadcrumb;
 use JobMetric\Panelio\Facades\Button;
 use JobMetric\Panelio\Facades\Datatable;
@@ -20,9 +21,6 @@ use JobMetric\Panelio\Http\Requests\ImportActionListRequest;
 use JobMetric\Taxonomy\Facades\Taxonomy;
 use JobMetric\Taxonomy\Facades\TaxonomyType;
 use JobMetric\Taxonomy\Http\Requests\SetTranslationRequest;
-use JobMetric\Taxonomy\Http\Requests\StoreTaxonomyRequest;
-use JobMetric\Taxonomy\Http\Requests\UpdateTaxonomyRequest;
-use JobMetric\Taxonomy\Models\Taxonomy as TaxonomyModel;
 use Throwable;
 
 class PluginController extends Controller
@@ -63,7 +61,7 @@ class PluginController extends Controller
     public function index(string $panel, string $section, string $type, Extension $extension): View|JsonResponse
     {
         if (request()->ajax()) {
-            $query = Plugin::query([
+            $query = PluginFacade::query([
                 'extension_id' => $extension->id
             ]);
 
@@ -145,12 +143,12 @@ class PluginController extends Controller
         Button::saveClose();
         Button::cancel($this->route['index']);
 
-        DomiScript('assets/vendor/extension/js/plugin/form.js');
-
         $data['type'] = $type;
         $data['action'] = $this->route['store'];
 
         $data['fields'] = $extension->info['fields'] ?? [];
+
+        $data['extension'] = $extension;
 
         return view('extension::plugin.form', $data);
     }
@@ -171,7 +169,7 @@ class PluginController extends Controller
     {
         $form_data = $request->all();
 
-        $plugin = Plugin::store($extension, $request->validated());
+        $plugin = PluginFacade::store($extension->id, $request->validated());
 
         if ($plugin['ok']) {
             $this->alert($plugin['message']);
@@ -205,38 +203,42 @@ class PluginController extends Controller
      * @param string $panel
      * @param string $section
      * @param string $type
-     * @param TaxonomyModel $taxonomy
+     * @param Extension $extension
+     * @param Plugin $plugin
      *
      * @return View
+     * @throws Throwable
      */
-    public function edit(string $panel, string $section, string $type, TaxonomyModel $taxonomy): View
+    public function edit(string $panel, string $section, string $type, Extension $extension, Plugin $plugin): View
     {
-        $taxonomy->load(['files', 'metas', 'translations']);
+        if ($plugin->extension_id != $extension->id) {
+            throw new PluginNotMatchExtensionException($extension->id, $plugin->id);
+        }
+
+        $plugin->load('extension');
 
         $data['mode'] = 'edit';
 
-        $serviceType = TaxonomyType::type($type);
+        $serviceType = ExtensionType::type($type);
 
-        $data['label'] = $serviceType->getLabel();
-        $data['description'] = $serviceType->getDescription();
-        $data['translation'] = $serviceType->getTranslation();
-        $data['media'] = $serviceType->getMedia();
-        $data['metadata'] = $serviceType->getMetadata();
-        $data['hasUrl'] = $serviceType->hasUrl();
-        $data['hasHierarchical'] = $serviceType->hasHierarchical();
-        $data['hasBaseMedia'] = $serviceType->hasBaseMedia();
+        $extensionLabel = $serviceType->getLabel();
 
-        DomiTitle(trans('taxonomy::base.form.edit.title', [
-            'type' => $data['label'],
-            'name' => $taxonomy->id
+        $data['label'] = trans('extension::base.list.plugin.label', [
+            'name' => trans($extension->info['title'])
+        ]);
+
+        DomiTitle(trans('extension::base.form.plugin.edit.title', [
+            'name' => trans($extension->info['title']),
+            'number' => $plugin->id
         ]));
 
         // Add breadcrumb
         add_breadcrumb_base($panel, $section);
+        Breadcrumb::add($extensionLabel, $this->route['extension']['index']);
         Breadcrumb::add($data['label'], $this->route['index']);
-        Breadcrumb::add(trans('taxonomy::base.form.edit.title', [
-            'type' => $data['label'],
-            'name' => $taxonomy->id
+        Breadcrumb::add(trans('extension::base.form.plugin.edit.title', [
+            'name' => trans($extension->info['title']),
+            'number' => $plugin->id
         ]));
 
         // add button
@@ -245,48 +247,44 @@ class PluginController extends Controller
         Button::saveClose();
         Button::cancel($this->route['index']);
 
-        DomiScript('assets/vendor/taxonomy/js/form.js');
-
         $data['type'] = $type;
-        $data['action'] = route('taxonomy.{type}.update', [
+        $data['action'] = route('extension.plugin.update', [
             'panel' => $panel,
             'section' => $section,
             'type' => $type,
-            'jm_taxonomy' => $taxonomy->id
+            'jm_extension' => $extension->id,
+            'jm_plugin' => $plugin->id
         ]);
 
-        $data['languages'] = Language::all();
-        $data['taxonomies'] = Taxonomy::all($type);
+        $data['fields'] = $extension->info['fields'] ?? [];
 
-        $data['taxonomy'] = $taxonomy;
-        $data['slug'] = $taxonomy->urlByCollection($type, true);
-        $data['translation_edit_values'] = translationResourceData($taxonomy->translations);
-        $data['media_values'] = $taxonomy->getMediaDataForObject();
-        $data['meta_values'] = $taxonomy->getMetaDataForObject();
+        $data['extension'] = $extension;
+        $data['plugin'] = $plugin;
 
-        return view('taxonomy::form', $data);
+        return view('extension::plugin.form', $data);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param UpdateTaxonomyRequest $request
+     * @param PluginRequest $request
      * @param string $panel
      * @param string $section
      * @param string $type
-     * @param TaxonomyModel $taxonomy
+     * @param Extension $extension
+     * @param Plugin $plugin
      *
      * @return RedirectResponse
      * @throws Throwable
      */
-    public function update(UpdateTaxonomyRequest $request, string $panel, string $section, string $type, TaxonomyModel $taxonomy): RedirectResponse
+    public function update(PluginRequest $request, string $panel, string $section, string $type, Extension $extension, Plugin $plugin): RedirectResponse
     {
         $form_data = $request->all();
 
-        $taxonomy = Taxonomy::update($taxonomy->id, $request->validated());
+        $plugin = PluginFacade::update($extension->id, $plugin->id, $request->validated());
 
-        if ($taxonomy['ok']) {
-            $this->alert($taxonomy['message']);
+        if ($plugin['ok']) {
+            $this->alert($plugin['message']);
 
             if ($form_data['save'] == 'save.new') {
                 return redirect()->to($this->route['create']);
@@ -297,15 +295,16 @@ class PluginController extends Controller
             }
 
             // btn save
-            return redirect()->route('taxonomy.{type}.edit', [
+            return redirect()->route('extension.plugin.edit', [
                 'panel' => $panel,
                 'section' => $section,
                 'type' => $type,
-                'jm_taxonomy' => $taxonomy['data']->id
+                'jm_extension' => $extension->id,
+                'jm_plugin' => $plugin['data']->id
             ]);
         }
 
-        $this->alert($taxonomy['message'], 'danger');
+        $this->alert($plugin['message'], 'danger');
 
         return back();
     }
