@@ -46,6 +46,7 @@ return [
         "plugin" => [
             "stored" => "The plugin has been stored successfully.",
             "updated" => "The plugin has been updated successfully.",
+            "deleted_items" => "{1} One plugin item from :extension extension has been deleted successfully.|[2,*] :count plugin items from :extension extension have been deleted successfully.",
             "added" => "The plugin has been added.",
             "edited" => "The plugin has been edited.",
             "deleted" => "The plugin has been deleted.",

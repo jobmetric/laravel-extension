@@ -323,16 +323,17 @@ class PluginController extends Controller
     public function deletes(array $ids, mixed $params, string &$alert = null, string &$danger = null): bool
     {
         $type = $params[2] ?? null;
+        $extension = $params[3] ?? null;
 
-        $serviceType = TaxonomyType::type($type);
+        ExtensionType::type($type);
 
         try {
             foreach ($ids as $id) {
-                Taxonomy::delete($id);
+                PluginFacade::delete($id);
             }
 
-            $alert = trans_choice('taxonomy::base.messages.deleted_items', count($ids), [
-                'taxonomy' => $serviceType->getLabel()
+            $alert = trans_choice('extension::base.messages.plugin.deleted_items', count($ids), [
+                'extension' => trans($extension->info['title'])
             ]);
 
             return true;
