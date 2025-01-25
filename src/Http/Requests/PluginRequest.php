@@ -31,8 +31,10 @@ class PluginRequest extends FormRequest
     {
         $parameters = request()->route()->parameters();
 
-        $info = $parameters['jm_extension']?->info;
+        $extension = $parameters['jm_extension'] ?? null;
         $plugin = $parameters['jm_plugin'] ?? null;
+
+        $info = $extension?->info;
 
         if (empty($info)) {
             if (empty($this->extension_id)) {
@@ -63,7 +65,7 @@ class PluginRequest extends FormRequest
             if ($plugin) {
                 $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,' . $plugin->id . ',id,extension_id,' . $plugin->extension_id;
             } else {
-                $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,NULL,id,extension_id,' . $plugin->extension_id;
+                $rules['name'] = 'required|string|max:255|unique:' . config('extension.tables.plugin') . ',name,NULL,id,extension_id,' . $extension->id;
             }
         }
 
