@@ -28,7 +28,9 @@ class PluginResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'extension' => $this->whenLoaded('extension', ExtensionResource::make($this->extension)),
+            'extension' => $this->whenLoaded('extension', function(){
+                return ExtensionResource::make($this->extension);
+            }),
             'name' => trans($this->name),
             'fields' => $this->fields,
             'status' => $this->status,

@@ -3,6 +3,7 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -92,9 +93,9 @@ class Extension
      * @param array $filter
      * @param array $with
      *
-     * @return array
+     * @return AnonymousResourceCollection
      */
-    public function all(string $type, array $filter = [], array $with = []): array
+    public function all(string $type, array $filter = [], array $with = []): AnonymousResourceCollection
     {
         $database_extensions = $this->query(Str::studly($type), $filter, $with)->get();
 
@@ -102,7 +103,7 @@ class Extension
         foreach ($extensions as $i => $extension) {
             foreach ($database_extensions as $j => $database_extension) {
                 if ($extension['extension'] === $database_extension->extension && $extension['name'] === $database_extension->info['name']) {
-                    $extensions[$i]['data'] = $database_extension->toArray();
+                    $extensions[$i]['data'] = $database_extension;
                     $extensions[$i]['installed'] = true;
                     unset($database_extensions[$j]);
                     break;
@@ -110,7 +111,7 @@ class Extension
             }
         }
 
-        return ExtensionResource::collection($extensions)->toArray(request());
+        return ExtensionResource::collection($extensions);
     }
 
     /**
