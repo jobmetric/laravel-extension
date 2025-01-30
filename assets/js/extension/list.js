@@ -365,8 +365,8 @@ loadScriptsSequentially([
             searching: false,
             lengthChange: false,
             deferRender: true,
-            pageLength: localize.list_view.page_limit,
-            language: localize.language.datatable
+            pageLength: getLocalize('list_view.page_limit'),
+            language: getLocalize('language.datatable')
         })
     })
 })
