@@ -13,7 +13,6 @@ return [
     */
 
     "validation" => [
-        "errors" => "خطاهای اعتبار سنجی رخ داده است.",
         "namespace_not_found" => "آدرس فایل :namespace یافت نشد.",
     ],
 

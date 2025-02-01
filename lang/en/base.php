@@ -13,7 +13,6 @@ return [
     */
 
     "validation" => [
-        "errors" => "Validation errors occurred.",
         "namespace_not_found" => "The :namespace file not found.",
     ],
 

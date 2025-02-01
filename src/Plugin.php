@@ -351,7 +351,7 @@ class Plugin
 
             return [
                 'ok' => false,
-                'message' => trans('extension::base.validation.errors'),
+                'message' => trans('package-core::base.validation.errors'),
                 'errors' => $errors,
                 'status' => 422
             ];
@@ -400,7 +400,7 @@ class Plugin
 
             return [
                 'ok' => false,
-                'message' => trans('extension::base.validation.errors'),
+                'message' => trans('package-core::base.validation.errors'),
                 'errors' => $errors,
                 'status' => 422
             ];
