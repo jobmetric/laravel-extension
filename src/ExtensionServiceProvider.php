@@ -65,16 +65,16 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
     public function afterBootPackage(): void
     {
         if (checkDatabaseConnection() && !app()->runningInConsole() && !app()->runningUnitTests()) {
-            $this->loadAddPlugin();
+            $this->loadTranslationPlugin();
         }
     }
 
     /**
-     * Load add plugin
+     * Load translation plugin
      *
      * @return void
      */
-    private function loadAddPlugin(): void
+    private function loadTranslationPlugin(): void
     {
         $extensionPath = app_path('Extensions');
         if (is_dir($extensionPath)) {
