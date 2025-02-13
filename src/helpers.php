@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Str;
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Facades\Plugin;
 
@@ -112,5 +113,46 @@ if (!function_exists('plugin_run')) {
     function plugin_run(int $plugin_id): ?string
     {
         return Plugin::run($plugin_id);
+    }
+}
+
+if (!function_exists('loadTranslationExtension')) {
+    /**
+     * Load Translation Extension
+     *
+     * @param string $path
+     *
+     * @return void
+     * @throws Throwable
+     */
+    function loadTranslationExtension(string $path): void
+    {
+        if (is_dir($path)) {
+            $ds = DIRECTORY_SEPARATOR;
+            $extensions = array_diff(scandir($path), ['..', '.']);
+
+            foreach ($extensions as $extension) {
+                $modules = array_diff(scandir($path . $ds . $extension), ['..', '.']);
+                foreach ($modules as $module) {
+                    $langFile = $path . $ds . $extension . $ds . $module . $ds . 'lang' . $ds . app()->getLocale() . $ds . 'extension.php';
+
+                    if (!file_exists($langFile)) {
+                        $langFile = $path . $ds . $extension . $ds . $module . $ds . 'lang' . $ds . 'en' . $ds . 'extension.php';
+                    }
+
+                    if (file_exists($langFile)) {
+                        $translationPath = $path . $ds . $extension . $ds . $module . $ds . 'lang';
+
+                        // Now directly calling the loadTranslationsFrom logic
+                        $key = 'extension-' . Str::kebab($extension) . '-' . Str::kebab($module);
+
+                        // Register translations manually using a Translation Loader
+                        app('translator')->addNamespace($key, $translationPath);
+                    }
+                }
+            }
+        } else {
+            throw new Exception('Path extension not found!');
+        }
     }
 }
