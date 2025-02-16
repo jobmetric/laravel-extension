@@ -2,20 +2,18 @@
 
 namespace JobMetric\Extension;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
-use JobMetric\BanIp\BanIp;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use JobMetric\Extension\View\Components\Plugin as PluginComponent;
 use JobMetric\PackageCore\Exceptions\AssetFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\RegisterClassTypeNotFoundException;
 use JobMetric\PackageCore\Exceptions\ViewFolderNotFoundException;
 use JobMetric\PackageCore\PackageCore;
 use JobMetric\PackageCore\PackageCoreServiceProvider;
-use JobMetric\Taxonomy\Models\Taxonomy as TaxonomyModel;
-use JobMetric\Taxonomy\Models\TaxonomyPath;
-use JobMetric\Taxonomy\Models\TaxonomyRelation;
+use Throwable;
 
 class ExtensionServiceProvider extends PackageCoreServiceProvider
 {
@@ -61,11 +59,15 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
      * After boot package
      *
      * @return void
+     * @throws Throwable
      */
     public function afterBootPackage(): void
     {
         if (checkDatabaseConnection() && !app()->runningInConsole() && !app()->runningUnitTests()) {
             loadTranslationExtension(app_path('Extensions'));
         }
+
+        // add alias for components
+        Blade::component(PluginComponent::class, 'plugin-field');
     }
 }
