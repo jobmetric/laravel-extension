@@ -131,4 +131,11 @@ return [
         "default_description" => "This is a test extension. 😉",
     ],
 
+    "component" => [
+        "plugin_field" => [
+            "title" => "Plugin",
+            "placeholder" => "Select plugin.",
+        ],
+    ],
+
 ];
