@@ -55,9 +55,38 @@ class Plugin
      */
     public function query(array $filter = [], array $with = []): QueryBuilder
     {
-        $fields = ['id', 'extension_id', 'name', 'fields', 'status', 'created_at', 'updated_at'];
+        $fields = [
+            'id',
+            'extension_id',
+            'name',
+            'fields',
+            'status',
+            'extension_type',
+            'extension_name',
+            'extension_namespace',
+            'extension_info',
+            'created_at',
+            'updated_at'
+        ];
+
+        $extension_table = config('extension.tables.extension');
+        $plugin_table = config('extension.tables.plugin');
+
+        $query = PluginModel::query()->select([
+            $plugin_table . '.*',
+            'e.extension AS extension_type',
+            'e.name as extension_name',
+            'e.namespace as extension_namespace',
+            'e.info as extension_info',
+        ]);
+
+        // Join the extension table for select plugin
+        $query->leftJoin($extension_table . ' as e', function ($join) use ($plugin_table) {
+            $join->on('e.id', '=', $plugin_table . '.extension_id');
+        });
 
         $query = QueryBuilder::for(PluginModel::class)
+            ->fromSub($query, $plugin_table)
             ->allowedFields($fields)
             ->allowedSorts($fields)
             ->allowedFilters($fields)
