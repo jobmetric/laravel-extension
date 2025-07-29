@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
 use JobMetric\Extension\View\Components\Plugin as PluginComponent;
+use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
 use JobMetric\PackageCore\Exceptions\AssetFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\RegisterClassTypeNotFoundException;
@@ -40,7 +41,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerCommand(Commands\ExtensionUninstallCommand::class)
             ->registerClass('Plugin', Plugin::class)
             ->registerClass('Extension', Extension::class)
-            ->registerClass('ExtensionType', ExtensionType::class);
+            ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**

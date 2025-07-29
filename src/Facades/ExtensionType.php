@@ -5,13 +5,14 @@ namespace JobMetric\Extension\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \JobMetric\Extension\ExtensionType
+ * @mixin \JobMetric\Extension\ExtensionType
  *
  * @method static \JobMetric\Extension\ExtensionType define(string $type)
  * @method static \JobMetric\Extension\ExtensionType type(string $type)
+ * @method static array get()
  * @method static array getTypes()
  * @method static bool hasType(string $type)
- * @method static void checkType(string|null $type)
+ * @method static void ensureTypeExists(string $type)
  */
 class ExtensionType extends Facade
 {
@@ -22,6 +23,6 @@ class ExtensionType extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return \JobMetric\Extension\ExtensionType::class;
+        return 'ExtensionType';
     }
 }

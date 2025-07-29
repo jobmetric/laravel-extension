@@ -3,22 +3,19 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Support\Traits\Macroable;
-use JobMetric\PackageCore\Services\BaseServiceType;
-use JobMetric\PackageCore\Services\InformationServiceType;
-use JobMetric\PackageCore\Services\ListShowDescriptionServiceType;
-use JobMetric\PackageCore\Services\ServiceType;
+use JobMetric\Typeify\BaseType;
+use JobMetric\Typeify\Traits\HasDriverNamespaceType;
+use JobMetric\Typeify\Traits\List\ShowDescriptionInListType;
 
-class ExtensionType extends ServiceType
+class ExtensionType extends BaseType
 {
     use Macroable,
-        BaseServiceType,
-        InformationServiceType,
-        ListShowDescriptionServiceType,
-        DriverNamespaceServiceType;
+        ShowDescriptionInListType,
+        HasDriverNamespaceType;
 
-    protected function serviceType(): string
+    protected function typeName(): string
     {
-        return 'ExtensionServiceType';
+        return 'extension-type';
     }
 
     protected function namespaceDriver(): string
