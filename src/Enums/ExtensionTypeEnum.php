@@ -2,7 +2,7 @@
 
 namespace JobMetric\Extension\Enums;
 
-use JobMetric\PackageCore\Enums\EnumToArray;
+use JobMetric\PackageCore\Enums\EnumMacros;
 
 /**
  * @method static MODULE()
@@ -19,7 +19,7 @@ use JobMetric\PackageCore\Enums\EnumToArray;
  */
 enum ExtensionTypeEnum: string
 {
-    use EnumToArray;
+    use EnumMacros;
 
     case MODULE = "Module";
     case SHIPPINGMETHOD = "ShippingMethod";
