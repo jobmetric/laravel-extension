@@ -2,25 +2,33 @@
 
 namespace JobMetric\Extension\Http\Resources;
 
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
+use JobMetric\Extension\Models\Plugin;
 
 /**
- * @property mixed id
- * @property mixed extension
- * @property mixed name
- * @property mixed info
- * @property mixed created_at
- * @property mixed updated_at
- * @property mixed plugin_count
- * @property mixed plugins
+ * Class ExtensionResource
+ *
+ * Transforms the Extension model into a structured JSON resource.
+ *
+ * @property int $id
+ * @property string $extension
+ * @property string $name
+ * @property string $namespace
+ * @property array|null $info
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ *
+ * @property-read Plugin[] $plugins
+ * @property-read int $plugin_count
  */
 class ExtensionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -42,8 +50,15 @@ class ExtensionResource extends JsonResource
             'namespace' => $this['namespace'],
             'deletable' => $this['deletable'],
             'installed' => $this['installed'] ?? false,
-            'installed_at' => isset($this['data']['created_at']) ? Carbon::make($this['data']['created_at'])->format('Y-m-d H:i:s') : '',
-            'updated_at' => isset($this['data']['updated_at']) ? Carbon::make($this['data']['updated_at'])->format('Y-m-d H:i:s') : '',
+
+            // ISO 8601 timestamps for interoperability across clients
+            'installed_at' => isset($this['data']['created_at'])
+                ? Carbon::make($this['data']['created_at'])?->toISOString()
+                : null,
+            'updated_at' => isset($this['data']['updated_at'])
+                ? Carbon::make($this['data']['updated_at'])?->toISOString()
+                : null,
+
             'plugin_count' => $this['data']['plugin_count'] ?? 0,
         ];
 
@@ -53,13 +68,13 @@ class ExtensionResource extends JsonResource
                     'panel' => $request->panel,
                     'section' => $request->section,
                     'type' => $request->type,
-                    'jm_extension' => $this['data']['id']
+                    'jm_extension' => $this['data']['id'],
                 ]);
                 $data['plugin_add'] = route('extension.plugin.create', [
                     'panel' => $request->panel,
                     'section' => $request->section,
                     'type' => $request->type,
-                    'jm_extension' => $this['data']['id']
+                    'jm_extension' => $this['data']['id'],
                 ]);
             } else {
                 $data['edit_link'] = route('extension.plugin.edit', [
@@ -67,7 +82,7 @@ class ExtensionResource extends JsonResource
                     'section' => $request->section,
                     'type' => $request->type,
                     'jm_extension' => $this['data']['id'],
-                    'jm_plugin' => $this['data']['plugins'][0]['id']
+                    'jm_plugin' => $this['data']['plugins'][0]['id'],
                 ]);
             }
         }
