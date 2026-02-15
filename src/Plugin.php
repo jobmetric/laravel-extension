@@ -2,7 +2,6 @@
 
 namespace JobMetric\Extension;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -28,23 +27,6 @@ use Throwable;
 
 class Plugin
 {
-    /**
-     * The application instance.
-     *
-     * @var Application
-     */
-    protected Application $app;
-
-    /**
-     * Create a new Setting instance.
-     *
-     * @param Application $app
-     */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
-    }
-
     /**
      * Get the specified plugin.
      *

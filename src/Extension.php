@@ -2,7 +2,6 @@
 
 namespace JobMetric\Extension;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -29,23 +28,6 @@ use Throwable;
 
 class Extension
 {
-    /**
-     * The application instance.
-     *
-     * @var Application
-     */
-    protected Application $app;
-
-    /**
-     * Create a new Setting instance.
-     *
-     * @param Application $app
-     */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
-    }
-
     /**
      * Get the specified extension.
      *
