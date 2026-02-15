@@ -2,19 +2,14 @@
 
 namespace JobMetric\Extension;
 
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
-use JobMetric\Extension\View\Components\Plugin as PluginComponent;
 use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
-use JobMetric\PackageCore\Exceptions\AssetFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\RegisterClassTypeNotFoundException;
-use JobMetric\PackageCore\Exceptions\ViewFolderNotFoundException;
 use JobMetric\PackageCore\PackageCore;
 use JobMetric\PackageCore\PackageCoreServiceProvider;
-use Throwable;
 
 class ExtensionServiceProvider extends PackageCoreServiceProvider
 {
@@ -24,18 +19,13 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
      * @return void
      * @throws MigrationFolderNotFoundException
      * @throws RegisterClassTypeNotFoundException
-     * @throws ViewFolderNotFoundException
-     * @throws AssetFolderNotFoundException
      */
     public function configuration(PackageCore $package): void
     {
         $package->name('laravel-extension')
-            ->hasAsset()
             ->hasConfig()
             ->hasMigration()
             ->hasTranslation()
-            ->hasRoute()
-            ->hasView()
             ->registerCommand(Commands\ExtensionMakeCommand::class)
             ->registerCommand(Commands\ExtensionInstallCommand::class)
             ->registerCommand(Commands\ExtensionUninstallCommand::class)
@@ -54,21 +44,5 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         // Register model binding
         Route::model('jm_extension', ExtensionModel::class);
         Route::model('jm_plugin', PluginModel::class);
-    }
-
-    /**
-     * After boot package
-     *
-     * @return void
-     * @throws Throwable
-     */
-    public function afterBootPackage(): void
-    {
-        if (checkDatabaseConnection() && !app()->runningInConsole() && !app()->runningUnitTests()) {
-            loadTranslationExtension(app_path('Extensions'));
-        }
-
-        // add alias for components
-        Blade::component(PluginComponent::class, 'plugin-field');
     }
 }
