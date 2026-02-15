@@ -9,45 +9,67 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * JobMetric\Extension\Models\Extension
+ * Class Extension
  *
- * @property int id
- * @property string extension
- * @property string name
- * @property string namespace
- * @property array info
- * @property int plugin_count
- * @property Carbon created_at
- * @property Carbon updated_at
- * @method static ExtensionName(string $extension, string $name)
- * @method static ExtensionNamespace(string $namespace)
- * @method static create(array $array)
- * @method static find(int|null $extension_id)
+ * Represents an extension definition that can have multiple plugins.
+ * Extensions are identified by their type, name, and namespace.
+ * Each extension can contain configuration info and manage its plugins.
+ *
+ * @package JobMetric\Extension
+ *
+ * @property int $id               The primary identifier of the extension row.
+ * @property string $extension     The type/category of the extension.
+ * @property string $name          The unique name of the extension.
+ * @property string $namespace     The PHP namespace for the extension class.
+ * @property array|null $info      Optional JSON configuration/metadata for the extension.
+ * @property Carbon $created_at    The timestamp when this extension was created.
+ * @property Carbon $updated_at    The timestamp when this extension was last updated.
+ *
+ * @property-read Plugin[] $plugins
+ * @property-read int $plugin_count
+ *
+ * @method static Builder|Extension ofExtensionName(string $extension, string $name)
+ * @method static Builder|Extension ofNamespace(string $namespace)
+ * @method static Builder|Extension whereExtension(string $extension)
+ * @method static Builder|Extension whereName(string $name)
+ * @method static Builder|Extension whereNamespace(string $namespace)
+ * @method static Extension|null find(int|null $extension_id)
+ * @method static Extension create(array $attributes)
  */
 class Extension extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'extension',
         'name',
         'namespace',
-        'info'
+        'info',
     ];
 
     /**
-     * The attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
      * @var array<string, string>
      */
     protected $casts = [
         'extension' => 'string',
-        'name' => 'string',
+        'name'      => 'string',
         'namespace' => 'string',
-        'info' => 'array'
+        'info'      => 'array',
     ];
 
-    public function getTable()
+    /**
+     * Override the table name using config.
+     *
+     * @return string
+     */
+    public function getTable(): string
     {
         return config('extension.tables.extension', parent::getTable());
     }
@@ -59,11 +81,11 @@ class Extension extends Model
      */
     public function plugins(): HasMany
     {
-        return $this->hasMany(Plugin::class);
+        return $this->hasMany(Plugin::class, 'extension_id');
     }
 
     /**
-     * Scope a query to only include the extension with the given name.
+     * Scope: filter by extension type and name.
      *
      * @param Builder $query
      * @param string $extension
@@ -71,31 +93,31 @@ class Extension extends Model
      *
      * @return Builder
      */
-    public function scopeExtensionName(Builder $query, string $extension, string $name): Builder
+    public function scopeOfExtensionName(Builder $query, string $extension, string $name): Builder
     {
         return $query->where([
             'extension' => $extension,
-            'name' => $name
+            'name'      => $name,
         ]);
     }
 
     /**
-     * Scope a query to only include the namespace.
+     * Scope: filter by namespace.
      *
      * @param Builder $query
      * @param string $namespace
      *
      * @return Builder
      */
-    public function scopeExtensionNamespace(Builder $query, string $namespace): Builder
+    public function scopeOfNamespace(Builder $query, string $namespace): Builder
     {
-        return $query->where([
-            'namespace' => $namespace
-        ]);
+        return $query->where('namespace', $namespace);
     }
 
     /**
-     * Get plugin count
+     * Accessor: get the count of plugins for this extension.
+     *
+     * @return int
      */
     public function getPluginCountAttribute(): int
     {
