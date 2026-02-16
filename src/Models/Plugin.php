@@ -3,6 +3,7 @@
 namespace JobMetric\Extension\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,10 +32,6 @@ use JobMetric\PackageCore\Models\HasBooleanStatus;
  * @method static Builder|Plugin whereExtensionId(int $extension_id)
  * @method static Builder|Plugin whereName(string $name)
  * @method static Builder|Plugin whereStatus(bool $status)
- * @method static Builder|Plugin forExtension(int $extensionId)
- * @method static Builder|Plugin ofName(string $name)
- * @method static Builder|Plugin active()
- * @method static Builder|Plugin inactive()
  * @method static Plugin|null find(int $plugin_id)
  * @method static Plugin create(array $attributes)
  */
@@ -69,7 +66,7 @@ class Plugin extends Model
     protected $casts = [
         'extension_id' => 'integer',
         'name'         => 'string',
-        'fields'       => 'array',
+        'fields'       => AsArrayObject::class,
         'status'       => 'boolean',
     ];
 
@@ -91,55 +88,5 @@ class Plugin extends Model
     public function extension(): BelongsTo
     {
         return $this->belongsTo(Extension::class, 'extension_id');
-    }
-
-    /**
-     * Scope: filter by extension id.
-     *
-     * @param Builder $query
-     * @param int $extensionId
-     *
-     * @return Builder
-     */
-    public function scopeForExtension(Builder $query, int $extensionId): Builder
-    {
-        return $query->where('extension_id', $extensionId);
-    }
-
-    /**
-     * Scope: filter by plugin name.
-     *
-     * @param Builder $query
-     * @param string $name
-     *
-     * @return Builder
-     */
-    public function scopeOfName(Builder $query, string $name): Builder
-    {
-        return $query->where('name', $name);
-    }
-
-    /**
-     * Scope: only active plugins.
-     *
-     * @param Builder $query
-     *
-     * @return Builder
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('status', true);
-    }
-
-    /**
-     * Scope: only inactive plugins.
-     *
-     * @param Builder $query
-     *
-     * @return Builder
-     */
-    public function scopeInactive(Builder $query): Builder
-    {
-        return $query->where('status', false);
     }
 }

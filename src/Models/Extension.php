@@ -3,6 +3,7 @@
 namespace JobMetric\Extension\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,10 +27,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at    The timestamp when this extension was last updated.
  *
  * @property-read Plugin[] $plugins
- * @property-read int $plugin_count
+ * @property-read int $plugins_count
  *
- * @method static Builder|Extension ofExtensionName(string $extension, string $name)
- * @method static Builder|Extension ofNamespace(string $namespace)
  * @method static Builder|Extension whereExtension(string $extension)
  * @method static Builder|Extension whereName(string $name)
  * @method static Builder|Extension whereNamespace(string $namespace)
@@ -61,7 +60,7 @@ class Extension extends Model
         'extension' => 'string',
         'name'      => 'string',
         'namespace' => 'string',
-        'info'      => 'array',
+        'info'      => AsArrayObject::class,
     ];
 
     /**
@@ -82,45 +81,5 @@ class Extension extends Model
     public function plugins(): HasMany
     {
         return $this->hasMany(Plugin::class, 'extension_id');
-    }
-
-    /**
-     * Scope: filter by extension type and name.
-     *
-     * @param Builder $query
-     * @param string $extension
-     * @param string $name
-     *
-     * @return Builder
-     */
-    public function scopeOfExtensionName(Builder $query, string $extension, string $name): Builder
-    {
-        return $query->where([
-            'extension' => $extension,
-            'name'      => $name,
-        ]);
-    }
-
-    /**
-     * Scope: filter by namespace.
-     *
-     * @param Builder $query
-     * @param string $namespace
-     *
-     * @return Builder
-     */
-    public function scopeOfNamespace(Builder $query, string $namespace): Builder
-    {
-        return $query->where('namespace', $namespace);
-    }
-
-    /**
-     * Accessor: get the count of plugins for this extension.
-     *
-     * @return int
-     */
-    public function getPluginCountAttribute(): int
-    {
-        return $this->plugins()->count();
     }
 }
