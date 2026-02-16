@@ -17,33 +17,36 @@ return new class extends Migration {
 
             $table->foreignId('extension_id')->index()->constrained(config('extension.tables.extension'))->cascadeOnDelete()->cascadeOnUpdate();
             /**
-             * Extension ID is the ID of the extension.
+             * Parent extension this plugin belongs to
              */
 
             $table->string('name')->index();
             /**
-             * This is the name of each Extension.
+             * Plugin name / identifier
+             *
+             * - human-readable or machine identifier for the plugin
              */
 
             $table->json('fields')->nullable();
             /**
-             * Fields of the extension, this field will be filled from the installer file during installation.
+             * Plugin configuration from installer file
              *
-             * @example
-             * {
-             *    "key": "value"
+             * value: json
+             * use: {
+             *     "key": "value"
              * }
              */
 
             $table->boolean('status')->default(true)->index();
             /**
-             * If the layout is not active, it will not be displayed in the layout list.
+             * Active status of the plugin
+             *
+             * - true = active, false = inactive
+             * - inactive plugins are not available in the system
              */
 
             $table->timestamps();
         });
-
-        cache()->forget('plugin');
     }
 
     /**
@@ -54,7 +57,5 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::dropIfExists(config('extension.tables.plugin'));
-
-        cache()->forget('plugin');
     }
 };

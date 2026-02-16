@@ -17,41 +17,45 @@ return new class extends Migration {
 
             $table->string('extension')->index();
             /**
-             * This is the name of each Extension.
+             * Extension identifier (e.g. package name, slug)
+             *
+             * - unique key to identify the extension in the system
              */
 
             $table->string('name')->index();
             /**
-             * This is the name of each Extension.
+             * Display name of the extension
+             *
+             * - human-readable label for UI
              */
 
             $table->string('namespace');
             /**
-             * This is the namespace of each Extension.
+             * PHP namespace of the extension
+             *
+             * - e.g. Vendor\PackageName
              */
 
             $table->json('info')->nullable();
             /**
-             * Information of the extension, this field will be filled from the installer file during installation.
+             * Extension metadata from installer file
              *
-             * @example
-             * {
-             *    "title": "Extension Name",
-             *    "description": "Description of the extension",
-             *    "version": "1.0.0",
-             *    "author": "Author Name",
-             *    "email": "Author Email",
-             *    "website": "Author Website",
-             *    "creationDate": "2023-08-04",
-             *    "copyright": "Copyright",
-             *    "license": "License",
+             * value: json
+             * use: {
+             *     "title": "Extension Name",
+             *     "description": "Description of the extension",
+             *     "version": "1.0.0",
+             *     "author": "Author Name",
+             *     "email": "Author Email",
+             *     "website": "Author Website",
+             *     "creationDate": "2023-08-04",
+             *     "copyright": "Copyright",
+             *     "license": "License"
              * }
              */
 
             $table->timestamps();
         });
-
-        cache()->forget('extension');
     }
 
     /**
@@ -62,7 +66,5 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::dropIfExists(config('extension.tables.extension'));
-
-        cache()->forget('extension');
     }
 };
