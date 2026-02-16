@@ -21,7 +21,7 @@ use JobMetric\Extension\Models\Plugin;
  * @property Carbon $updated_at
  *
  * @property-read Plugin[] $plugins
- * @property-read int $plugin_count
+ * @property-read int $plugins_count
  */
 class ExtensionResource extends JsonResource
 {
@@ -59,7 +59,7 @@ class ExtensionResource extends JsonResource
                 ? Carbon::make($this['data']['updated_at'])?->toISOString()
                 : null,
 
-            'plugin_count' => $this['data']['plugin_count'] ?? 0,
+            'plugins_count' => $this['data']['plugins_count'] ?? 0,
         ];
 
         if ($data['installed']) {

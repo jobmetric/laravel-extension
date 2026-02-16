@@ -47,7 +47,7 @@ class Extension
                 $query->from(config('extension.tables.plugin'))
                     ->selectRaw('count(*)')
                     ->whereColumn('extension_id', 'extensions.id');
-            }, 'plugin_count')
+            }, 'plugins_count')
             ->allowedFields($fields)
             ->allowedSorts($fields)
             ->allowedFilters($fields)
