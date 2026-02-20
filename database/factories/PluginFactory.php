@@ -21,9 +21,9 @@ class PluginFactory extends Factory
     {
         return [
             'extension_id' => null,
-            'name' => $this->faker->word,
-            'fields' => null,
-            'status' => $this->faker->boolean
+            'name'         => $this->faker->word,
+            'fields'       => null,
+            'status'       => $this->faker->boolean,
         ];
     }
 
@@ -36,8 +36,8 @@ class PluginFactory extends Factory
      */
     public function setDriver(int $extension_id): static
     {
-        return $this->state(fn(array $attributes) => [
-            'extension_id' => $extension_id
+        return $this->state(fn (array $attributes) => [
+            'extension_id' => $extension_id,
         ]);
     }
 
@@ -50,8 +50,8 @@ class PluginFactory extends Factory
      */
     public function setName(string $name): static
     {
-        return $this->state(fn(array $attributes) => [
-            'name' => $name
+        return $this->state(fn (array $attributes) => [
+            'name' => $name,
         ]);
     }
 
@@ -64,8 +64,8 @@ class PluginFactory extends Factory
      */
     public function setFields(array $fields): static
     {
-        return $this->state(fn(array $attributes) => [
-            'fields' => $fields
+        return $this->state(fn (array $attributes) => [
+            'fields' => $fields,
         ]);
     }
 
@@ -78,8 +78,8 @@ class PluginFactory extends Factory
      */
     public function setStatus(bool $status): static
     {
-        return $this->state(fn(array $attributes) => [
-            'status' => $status
+        return $this->state(fn (array $attributes) => [
+            'status' => $status,
         ]);
     }
 }

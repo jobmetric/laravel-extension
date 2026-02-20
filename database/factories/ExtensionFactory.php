@@ -20,11 +20,11 @@ class ExtensionFactory extends Factory
     public function definition(): array
     {
         return [
-            'driver' => $this->faker->word,
-            'name' => $this->faker->word,
-            'info' => null,
+            'driver'  => $this->faker->word,
+            'name'    => $this->faker->word,
+            'info'    => null,
             'options' => null,
-            'status' => $this->faker->boolean
+            'status'  => $this->faker->boolean,
         ];
     }
 
@@ -37,8 +37,8 @@ class ExtensionFactory extends Factory
      */
     public function setDriver(string $driver): static
     {
-        return $this->state(fn(array $attributes) => [
-            'driver' => $driver
+        return $this->state(fn (array $attributes) => [
+            'driver' => $driver,
         ]);
     }
 
@@ -51,8 +51,8 @@ class ExtensionFactory extends Factory
      */
     public function setName(string $name): static
     {
-        return $this->state(fn(array $attributes) => [
-            'name' => $name
+        return $this->state(fn (array $attributes) => [
+            'name' => $name,
         ]);
     }
 
@@ -65,15 +65,15 @@ class ExtensionFactory extends Factory
      */
     public function setInfo(array $info): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'info' => json_encode([
                 'description' => $info['description'] ?? null,
-                'version' => $info['version'] ?? null,
-                'author' => $info['author'] ?? null,
-                'email' => $info['email'] ?? null,
-                'website' => $info['website'] ?? null,
-                'fields' => $info['fields'] ?? []
-            ], JSON_UNESCAPED_UNICODE)
+                'version'     => $info['version'] ?? null,
+                'author'      => $info['author'] ?? null,
+                'email'       => $info['email'] ?? null,
+                'website'     => $info['website'] ?? null,
+                'fields'      => $info['fields'] ?? [],
+            ], JSON_UNESCAPED_UNICODE),
         ]);
     }
 
@@ -86,8 +86,8 @@ class ExtensionFactory extends Factory
      */
     public function setOptions(array $options): static
     {
-        return $this->state(fn(array $attributes) => [
-            'options' => $options
+        return $this->state(fn (array $attributes) => [
+            'options' => $options,
         ]);
     }
 
@@ -100,8 +100,8 @@ class ExtensionFactory extends Factory
      */
     public function setStatus(bool $status): static
     {
-        return $this->state(fn(array $attributes) => [
-            'status' => $status
+        return $this->state(fn (array $attributes) => [
+            'status' => $status,
         ]);
     }
 }
