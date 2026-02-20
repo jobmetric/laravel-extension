@@ -39,29 +39,15 @@ return [
             "installed" => "The :name extension has been installed.",
             "uninstalled" => "The :name extension has been uninstalled.",
             "deleted" => "The :name extension has been deleted.",
-            "updated" => "The :name extension has been updated.",
         ],
 
         "plugin" => [
             "stored" => "The plugin has been stored successfully.",
             "updated" => "The plugin has been updated successfully.",
-            "deleted_items" => "{1} One plugin item from :extension extension has been deleted successfully.|[2,*] :count plugin items from :extension extension have been deleted successfully.",
             "added" => "The plugin has been added.",
             "edited" => "The plugin has been edited.",
             "deleted" => "The plugin has been deleted.",
         ],
-    ],
-
-    "fields" => [
-        "title" => [
-            "label" => "Title",
-            "info" => "Enter the name of your plugin.",
-            "placeholder" => "Enter plugin title.",
-        ],
-        "status" => [
-            "label" => "Status",
-            "info" => "Select plugin status for enable or disable.",
-        ]
     ],
 
     "list" => [
@@ -175,13 +161,6 @@ return [
         "syncing_software" => [
             "label" => "Syncing Software",
             "description" => "Extensions that sync data with external software.",
-        ],
-    ],
-
-    "component" => [
-        "plugin_field" => [
-            "title" => "Plugin",
-            "placeholder" => "Select plugin.",
         ],
     ],
 
