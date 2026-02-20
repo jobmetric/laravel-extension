@@ -16,9 +16,10 @@ use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
+use JobMetric\CustomField\CustomField;
+use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Http\Requests\StorePluginRequest;
 use JobMetric\Extension\Http\Requests\UpdatePluginRequest;
-use JobMetric\Extension\Http\Resources\Fields\FieldResource;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
@@ -270,67 +271,78 @@ class Plugin
     }
 
     /**
-     * Get fields
+     * Get fields for plugin form (add/edit). Built from extension's form() (FormBuilder).
      *
      * @param string $extension
      * @param string $name
      * @param int|null $plugin_id
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws Throwable
      */
     public function fields(string $extension, string $name, int $plugin_id = null): array
     {
-        /**
-         * @var ExtensionModel $extension_model
-         */
         $extension_model = ExtensionFacade::getInfo($extension, $name);
+        $driver = app()->make($extension_model->namespace);
 
-        $fields = collect();
+        if (!$driver instanceof AbstractExtension) {
+            return [];
+        }
 
         $plugin_info = null;
         if ($plugin_id) {
             $plugin_info = $this->getInfo($plugin_id);
         }
 
-        $fields->add([
+        $customFields = $driver->form()->getAllCustomFields(true);
+        $list = [];
+
+        $list[] = [
             'extension' => $extension,
             'extension_name' => $name,
             'name' => 'name',
             'type' => 'text',
             'required' => true,
-            'value' => ($plugin_info) ? $plugin_info->name : null,
-        ]);
+            'default' => null,
+            'label' => trans('extension::base.form.plugin.fields.name.title'),
+            'info' => null,
+            'value' => $plugin_info?->name,
+        ];
 
-        $fields->add([
+        $list[] = [
             'extension' => $extension,
             'extension_name' => $name,
             'name' => 'status',
             'type' => 'boolean',
             'required' => true,
             'default' => true,
-            'value' => ($plugin_info) ? $plugin_info->status : null,
-        ]);
+            'label' => trans('package-core::base.components.boolean_status.label'),
+            'info' => null,
+            'value' => $plugin_info?->status,
+        ];
 
-        foreach ($extension_model->info['fields'] as $item) {
-            $fields->add(
-                array_merge([
-                    'extension' => $extension,
-                    'extension_name' => $name,
-                    'value' => ($plugin_info) ? $plugin_info->fields[$item['name']] : null,
-                ], $item)
-            );
+        foreach ($customFields as $customField) {
+            if (!$customField instanceof CustomField) {
+                continue;
+            }
+            $fieldName = $customField->params['name'] ?? null;
+            if ($fieldName === null || $fieldName === '') {
+                continue;
+            }
+            $list[] = [
+                'extension' => $extension,
+                'extension_name' => $name,
+                'name' => $fieldName,
+                'type' => $customField->type ?? 'text',
+                'required' => (bool) ($customField->params['required'] ?? false),
+                'default' => $customField->params['value'] ?? null,
+                'label' => $customField->label ?? $fieldName,
+                'info' => $customField->info ?? null,
+                'value' => $plugin_info && isset($plugin_info->fields[$fieldName]) ? $plugin_info->fields[$fieldName] : ($customField->params['value'] ?? null),
+            ];
         }
 
-        return $fields->map(function ($item) {
-            $class = 'JobMetric\\Extension\\Http\\Resources\\Fields\\' . ucfirst($item['type']) . 'FieldResource';
-
-            if (class_exists($class)) {
-                return $class::make($item)->toArray(request());
-            }
-
-            return FieldResource::make($item)->toArray(request());
-        })->toArray();
+        return $list;
     }
 
     /**
@@ -354,9 +366,7 @@ class Plugin
             }
         }
 
-        $fields_validation = $this->fieldsValidation($extension_model);
-
-        $validator = Validator::make($fields, (new StorePluginRequest)->setFields($fields_validation)->rules());
+        $validator = Validator::make($fields, (new StorePluginRequest)->setExtensionId($extension_model->id)->rules());
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
 
@@ -402,9 +412,7 @@ class Plugin
     {
         $plugin_model = $this->getInfo($plugin_id);
 
-        $fields_validation = $this->fieldsValidation($plugin_model->extension);
-
-        $validator = Validator::make($fields, (new StorePluginRequest)->setFields($fields_validation)->rules());
+        $validator = Validator::make($fields, (new UpdatePluginRequest)->setExtensionId($plugin_model->extension_id)->setPlugin($plugin_model)->rules());
 
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
@@ -490,20 +498,4 @@ class Plugin
         return null;
     }
 
-    /**
-     * Get fields validation
-     *
-     * @param ExtensionModel $extension
-     *
-     * @return array
-     */
-    private function fieldsValidation(ExtensionModel $extension): array
-    {
-        $fields_validation = [];
-        foreach ($extension->info['fields'] ?? [] as $item) {
-            $fields_validation[$item['name']] = $item['validation'] ?? [];
-        }
-
-        return $fields_validation;
-    }
 }

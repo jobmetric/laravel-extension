@@ -24,6 +24,7 @@
         "laravel/framework": ">=9.19",
         "jobmetric/laravel-package-core": "^1.20",
         "jobmetric/laravel-event-system": "^1.1",
+        "jobmetric/laravel-form": "^1.5",
         "jobmetric/domi": "^1.13.1",
         "jobmetric/panelio": "^1.16.1",
         "jobmetric/typeify": "^1.1",
