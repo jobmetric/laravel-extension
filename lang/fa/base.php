@@ -26,7 +26,7 @@ return [
         "extension_config_file_not_found" => "فایل پیکربندی افزونه :name یافت نشد.",
         "extension_configuration_not_match" => "پیکربندی افزونه :name با پیکربندی افزونه اصلی مطابقت ندارد.",
         "extension_class_name_not_match" => "نام کلاس افزونه :name با نام کلاس اصلی مطابقت ندارد.",
-        "extension_dont_have_contract" => "افزونه :name دارای قرارداد JobMetric\Extension\Contracts\ExtensionContract نیست.",
+        "extension_dont_have_contract" => "افزونه :name از AbstractExtension ارث‌بری نمی‌کند.",
         "extension_have_some_plugin" => "افزونه :name دارای چند افزونه است. لطفا ابتدا پلاگین‌ها را حذف کنید.",
         "extension_not_found" => "افزونه یافت نشد.",
         "plugin_not_found" => "افزونه با شناسه :plugin_id پیدا نشد.",

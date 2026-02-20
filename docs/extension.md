@@ -124,20 +124,25 @@ The extension code is written in the `Banner.php` file, which is in the plugin f
 
 namespace App\Extensions\Module\Banner;
 
-use JobMetric\Extension\Contracts\ExtensionContract;
+use JobMetric\Extension\Contracts\AbstractExtension;
+use JobMetric\Form\FormBuilder;
 
-class Banner implements ExtensionContract
+class Banner extends AbstractExtension
 {
-    /**
-     * Handle the extension.
-     *
-     * @param array $options
-     *
-     * @return string|null
-     */
+    public static function extension(): string { return 'Module'; }
+    public static function name(): string { return 'Banner'; }
+    public static function version(): string { return '1.0.0'; }
+    public static function title(): string { return 'Banner'; }
+    public static function multiple(): bool { return false; }
+
+    public function form(): FormBuilder
+    {
+        return new FormBuilder();
+    }
+
     public function handle(array $options = []): ?string
     {
-        return 'Handle the extension';
+        return null;
     }
 }
 ```

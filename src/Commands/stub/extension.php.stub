@@ -2,19 +2,43 @@
 
 namespace App\Extensions\{{extension}}\{{name}};
 
-use JobMetric\Extension\Contracts\ExtensionContract;
+use JobMetric\Extension\Contracts\AbstractExtension;
+use JobMetric\Form\FormBuilder;
 
-class {{name}} implements ExtensionContract
+class {{name}} extends AbstractExtension
 {
-    /**
-     * Handle the extension.
-     *
-     * @param array $options
-     *
-     * @return string|null
-     */
+    public static function extension(): string
+    {
+        return '{{extension}}';
+    }
+
+    public static function name(): string
+    {
+        return '{{name}}';
+    }
+
+    public static function version(): string
+    {
+        return '1.0.0';
+    }
+
+    public static function title(): string
+    {
+        return '';
+    }
+
+    public static function multiple(): bool
+    {
+        return false;
+    }
+
+    public function form(): FormBuilder
+    {
+        return new FormBuilder();
+    }
+
     public function handle(array $options = []): ?string
     {
-        return 'Handle the extension';
+        return null;
     }
 }

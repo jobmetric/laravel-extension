@@ -26,7 +26,7 @@ return [
         "extension_config_file_not_found" => "The :name extension config file not found.",
         "extension_configuration_not_match" => "The :name extension configuration not match.",
         "extension_class_name_not_match" => "The :name extension class name not match.",
-        "extension_dont_have_contract" => "The :name extension dont have JobMetric\Extension\Contracts\ExtensionContract contract.",
+        "extension_dont_have_contract" => "The :name extension does not extend AbstractExtension.",
         "extension_have_some_plugin" => "The :name extension have some plugin. Please delete the plugins first.",
         "extension_not_found" => "The extension not found.",
         "plugin_not_found" => "The plugin with ID :plugin_id not found.",

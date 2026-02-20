@@ -169,8 +169,7 @@ class Extension
             throw new ExtensionClassNameNotMatchException($name);
         }
 
-        // check class has implement ExtensionContract
-        if (!in_array('JobMetric\Extension\Contracts\ExtensionContract', class_implements($namespace))) {
+        if (!is_subclass_of($namespace, \JobMetric\Extension\Contracts\AbstractExtension::class)) {
             throw new ExtensionDontHaveContractException($name);
         }
 
