@@ -4,7 +4,7 @@ namespace JobMetric\Extension\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
-use JobMetric\Extension\Enums\ExtensionTypeEnum;
+use JobMetric\Extension\Facades\ExtensionTypeRegistry;
 use JobMetric\PackageCore\Commands\ConsoleTools;
 
 class ExtensionMakeCommand extends Command
@@ -17,7 +17,7 @@ class ExtensionMakeCommand extends Command
      * @var string
      */
     protected $signature = 'extension:make
-                {name : Extension name (e.g., Module/Banner) part one of the following types in <info>JobMetric\Extension\Enums\ExtensionTypeEnum</info>}
+                {name : Extension name (e.g., Module/Banner). Type must be registered in ExtensionTypeRegistry.}
                 {--f|full : Create full extension}
                 {--m|multiple : Create multiple extension}';
 
@@ -52,7 +52,7 @@ class ExtensionMakeCommand extends Command
             return 2;
         }
 
-        if (!in_array($extension, ExtensionTypeEnum::values())) {
+        if (!ExtensionTypeRegistry::has($extension)) {
             $this->message('Invalid extension type.', 'error');
 
             return 3;
