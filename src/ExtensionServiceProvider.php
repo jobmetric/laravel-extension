@@ -2,10 +2,12 @@
 
 namespace JobMetric\Extension;
 
-use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Route;
+use JobMetric\Extension\Facades\ExtensionNamespaceRegistry as FacadeExtensionNamespaceRegistry;
+use JobMetric\Extension\Facades\ExtensionTypeRegistry as FacadeExtensionTypeRegistry;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use JobMetric\Extension\Support\ExtensionNamespaceRegistry;
 use JobMetric\Extension\Support\ExtensionRegistry;
 use JobMetric\Extension\Support\ExtensionTypeRegistry;
 use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
@@ -36,14 +38,14 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerClass('Extension', Extension::class)
             ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON());
+            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON())
+            ->registerClass('ExtensionNamespaceRegistry', ExtensionNamespaceRegistry::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**
      * After register package
      *
      * @return void
-     * @throws BindingResolutionException
      */
     public function afterRegisterPackage(): void
     {
@@ -51,10 +53,12 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         Route::model('jm_extension', ExtensionModel::class);
         Route::model('jm_plugin', PluginModel::class);
 
+        // register extension default namespace
+        FacadeExtensionNamespaceRegistry::register(appNamespace() . "Extensions");
+
         // register extension types
-        $registry = $this->app->make('ExtensionTypeRegistry');
         foreach (config('extension.types', []) as $type => $options) {
-            $registry->register($type, is_array($options) ? $options : []);
+            FacadeExtensionTypeRegistry::register($type, is_array($options) ? $options : []);
         }
     }
 }

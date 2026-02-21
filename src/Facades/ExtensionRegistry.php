@@ -5,13 +5,6 @@ namespace JobMetric\Extension\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * Facade for the extension registry.
- *
- * Registry stores only type => [namespaces]. Use resolveSpec() when you need
- * the full spec (instantiate and call AbstractExtension::toArray()).
- *
- * @package JobMetric\Extension\Facades
- *
  * @mixin \JobMetric\Extension\Support\ExtensionRegistry
  *
  * @method static \JobMetric\Extension\Support\ExtensionRegistry register(string $type, string $namespace)
