@@ -6,6 +6,7 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use JobMetric\Extension\Support\ExtensionRegistry;
 use JobMetric\Extension\Support\ExtensionTypeRegistry;
 use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
@@ -34,7 +35,8 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerClass('Plugin', Plugin::class)
             ->registerClass('Extension', Extension::class)
             ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON());
+            ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON())
+            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**

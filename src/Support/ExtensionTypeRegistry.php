@@ -10,7 +10,7 @@ use Illuminate\Support\Arr;
  * config (extension.types). Used by extension:make and other commands to
  * validate and list allowed extension types.
  *
- * @package JobMetric\Extension\Support
+ * @package JobMetric\Extension
  *
  * @property-read array<string, array> $types Map of type name => options (internal state)
  */
