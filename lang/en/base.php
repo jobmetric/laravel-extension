@@ -124,4 +124,42 @@ return [
         ],
     ],
 
+    "events" => [
+        "kernel" => [
+            "group" => "Extension Kernel",
+            "extensions_discovered" => [
+                "title" => "Extensions discovered",
+                "description" => "Fired after extension classes are discovered from the filesystem.",
+            ],
+            "extensions_loaded" => [
+                "title" => "Extensions loaded",
+                "description" => "Fired after installed extensions are loaded from the database.",
+            ],
+            "registering" => [
+                "title" => "Registering",
+                "description" => "Fired before the extension register phase.",
+            ],
+            "registered" => [
+                "title" => "Registered",
+                "description" => "Fired after the extension register phase.",
+            ],
+            "booting" => [
+                "title" => "Booting",
+                "description" => "Fired before the extension boot phase.",
+            ],
+            "booted" => [
+                "title" => "Booted",
+                "description" => "Fired after the extension boot phase.",
+            ],
+            "activating" => [
+                "title" => "Activating",
+                "description" => "Fired before the extension activate phase.",
+            ],
+            "activated" => [
+                "title" => "Activated",
+                "description" => "Fired after the extension activate phase.",
+            ],
+        ],
+    ],
+
 ];
