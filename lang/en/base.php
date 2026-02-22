@@ -122,46 +122,6 @@ return [
             "label" => "Module",
             "description" => "Extensions that add modules and features to the system.",
         ],
-        "shipping_method" => [
-            "label" => "Shipping Method",
-            "description" => "Extensions that define shipping methods for orders.",
-        ],
-        "payment_method" => [
-            "label" => "Payment Method",
-            "description" => "Extensions that define payment methods for orders.",
-        ],
-        "online_payment_method" => [
-            "label" => "Online Payment Method",
-            "description" => "Extensions that define online payment gateways.",
-        ],
-        "order_total" => [
-            "label" => "Order Total",
-            "description" => "Extensions that modify or add order total calculations.",
-        ],
-        "return_order_total" => [
-            "label" => "Return Order Total",
-            "description" => "Extensions that modify or add return order total calculations.",
-        ],
-        "captcha" => [
-            "label" => "Captcha",
-            "description" => "Extensions that provide captcha or human verification.",
-        ],
-        "report" => [
-            "label" => "Report",
-            "description" => "Extensions that add reports and analytics.",
-        ],
-        "theme" => [
-            "label" => "Theme",
-            "description" => "Extensions that define themes and layouts.",
-        ],
-        "attendance_device" => [
-            "label" => "Attendance Device",
-            "description" => "Extensions that integrate with attendance devices.",
-        ],
-        "syncing_software" => [
-            "label" => "Syncing Software",
-            "description" => "Extensions that sync data with external software.",
-        ],
     ],
 
 ];
