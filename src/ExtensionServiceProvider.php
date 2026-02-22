@@ -2,9 +2,12 @@
 
 namespace JobMetric\Extension;
 
+use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Facades\ExtensionNamespaceRegistry as FacadeExtensionNamespaceRegistry;
 use JobMetric\Extension\Facades\ExtensionTypeRegistry as FacadeExtensionTypeRegistry;
+use JobMetric\Extension\Kernel\ExtensionKernel;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
 use JobMetric\Extension\Support\ExtensionNamespaceRegistry;
@@ -36,10 +39,11 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerCommand(Commands\ExtensionUninstallCommand::class)
             ->registerClass('Plugin', Plugin::class)
             ->registerClass('Extension', Extension::class)
-            ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON())
+            ->registerClass('ExtensionKernel', ExtensionKernel::class, RegisterClassTypeEnum::SINGLETON())
+            ->registerClass('ExtensionNamespaceRegistry', ExtensionNamespaceRegistry::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionNamespaceRegistry', ExtensionNamespaceRegistry::class, RegisterClassTypeEnum::SINGLETON());
+            ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**
@@ -60,5 +64,25 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         foreach (config('extension.types', []) as $type => $options) {
             FacadeExtensionTypeRegistry::register($type, is_array($options) ? $options : []);
         }
+    }
+
+    /**
+     * before boot package
+     *
+     * @return void
+     * @throws BindingResolutionException
+     */
+    public function beforeBootPackage(): void
+    {
+        /** @var ExtensionKernel $kernel */
+        $kernel = $this->app->make('ExtensionKernel');
+
+        App::booting(function () use ($kernel) {
+            $kernel->discover()->loadInstalledExtensions()->registerExtensions();
+        });
+
+        App::booted(function () use ($kernel) {
+            $kernel->bootExtensions()->activateExtensions();
+        });
     }
 }

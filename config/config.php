@@ -32,4 +32,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Discover Cache
+    |--------------------------------------------------------------------------
+    |
+    | Cache discovered extension list to avoid filesystem scan on every request.
+    | TTL in seconds; 0 = disabled.
+    |
+    */
+
+    'discover_cache_ttl' => env('EXTENSION_DISCOVER_CACHE_TTL', 0),
+    'discover_cache_key' => 'extension_kernel.discovered',
+
 ];

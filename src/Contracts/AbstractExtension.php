@@ -2,6 +2,7 @@
 
 namespace JobMetric\Extension\Contracts;
 
+use Illuminate\Contracts\Foundation\Application;
 use JobMetric\Form\FormBuilder;
 use Throwable;
 
@@ -57,6 +58,27 @@ abstract class AbstractExtension
      * @return bool
      */
     abstract public static function multiple(): bool;
+
+    /**
+     * Execution priority. Lower value runs first (register, boot, activate). Override to change.
+     *
+     * @return int
+     */
+    public static function priority(): int
+    {
+        return 0;
+    }
+
+    /**
+     * FQCNs of extensions this one depends on; they will run before this extension.
+     * Used for topological sort. Override to declare dependencies.
+     *
+     * @return array<int, string>
+     */
+    public static function depends(): array
+    {
+        return [];
+    }
 
     /**
      * Short description of the extension (translation key or plain text).
@@ -188,4 +210,37 @@ abstract class AbstractExtension
      * @return string|null Result or output; null if nothing to return.
      */
     abstract public function handle(array $options = []): ?string;
+
+    /**
+     * Register bindings and configuration. Only interact with the container.
+     *
+     * @param Application $context
+     *
+     * @return void
+     */
+    public function register(Application $context): void
+    {
+    }
+
+    /**
+     * Bootstrap runtime wiring (routes, events, etc.). Run after all providers have booted.
+     *
+     * @param Application $context
+     *
+     * @return void
+     */
+    public function boot(Application $context): void
+    {
+    }
+
+    /**
+     * Activate extension (e.g. enable plugins). Should be idempotent.
+     *
+     * @param Application $context
+     *
+     * @return void
+     */
+    public function activate(Application $context): void
+    {
+    }
 }
