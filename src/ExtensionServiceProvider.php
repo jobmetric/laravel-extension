@@ -50,6 +50,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
      * After register package
      *
      * @return void
+     * @throws BindingResolutionException
      */
     public function afterRegisterPackage(): void
     {
@@ -64,16 +65,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         foreach (config('extension.types', []) as $type => $options) {
             FacadeExtensionTypeRegistry::register($type, is_array($options) ? $options : []);
         }
-    }
 
-    /**
-     * before boot package
-     *
-     * @return void
-     * @throws BindingResolutionException
-     */
-    public function beforeBootPackage(): void
-    {
         /** @var ExtensionKernel $kernel */
         $kernel = $this->app->make('ExtensionKernel');
 
