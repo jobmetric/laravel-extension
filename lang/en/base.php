@@ -151,14 +151,6 @@ return [
                 "title" => "Booted",
                 "description" => "Fired after the extension boot phase.",
             ],
-            "activating" => [
-                "title" => "Activating",
-                "description" => "Fired before the extension activate phase.",
-            ],
-            "activated" => [
-                "title" => "Activated",
-                "description" => "Fired after the extension activate phase.",
-            ],
         ],
     ],
 

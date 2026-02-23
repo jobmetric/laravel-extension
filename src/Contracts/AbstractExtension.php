@@ -60,7 +60,7 @@ abstract class AbstractExtension
     abstract public static function multiple(): bool;
 
     /**
-     * Execution priority. Lower value runs first (register, boot, activate). Override to change.
+     * Execution priority. Lower value runs first (register, boot). Override to change.
      *
      * @return int
      */
@@ -230,17 +230,6 @@ abstract class AbstractExtension
      * @return void
      */
     public function boot(Application $context): void
-    {
-    }
-
-    /**
-     * Activate extension (e.g. enable plugins). Should be idempotent.
-     *
-     * @param Application $context
-     *
-     * @return void
-     */
-    public function activate(Application $context): void
     {
     }
 }

@@ -73,7 +73,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         });
 
         App::booted(function () use ($kernel) {
-            $kernel->bootExtensions()->activateExtensions();
+            $kernel->bootExtensions();
         });
     }
 }

@@ -4,7 +4,7 @@ namespace JobMetric\Extension\Kernel;
 
 /**
  * Holds lifecycle callback arrays and registration methods for ExtensionKernel.
- * Used by ExtensionKernel to keep the main class focused on discover/load/register/boot/activate flow.
+ * Used by ExtensionKernel to keep the main class focused on discover/load/register/boot flow.
  */
 trait ExtensionKernelCallbacks
 {
@@ -35,20 +35,6 @@ trait ExtensionKernelCallbacks
      * @var array<int, callable(ExtensionKernel): void>
      */
     protected array $bootedCallbacks = [];
-
-    /**
-     * Callbacks run before activate() is invoked on all extensions.
-     *
-     * @var array<int, callable(ExtensionKernel): void>
-     */
-    protected array $activatingCallbacks = [];
-
-    /**
-     * Callbacks run after activate() has been invoked on all extensions.
-     *
-     * @var array<int, callable(ExtensionKernel): void>
-     */
-    protected array $activatedCallbacks = [];
 
     /**
      * Callbacks run before discover() scans the filesystem.
@@ -135,34 +121,6 @@ trait ExtensionKernelCallbacks
     }
 
     /**
-     * Register a callback to run before extension activate() phase.
-     *
-     * @param callable(ExtensionKernel): void $callback Receives this kernel.
-     *
-     * @return ExtensionKernelCallbacks|ExtensionKernel
-     */
-    public function activating(callable $callback): self
-    {
-        $this->activatingCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to run after extension activate() phase.
-     *
-     * @param callable(ExtensionKernel): void $callback Receives this kernel.
-     *
-     * @return ExtensionKernelCallbacks|ExtensionKernel
-     */
-    public function activated(callable $callback): self
-    {
-        $this->activatedCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
      * Register a callback to run before discover() scans the filesystem.
      *
      * @param callable(ExtensionKernel): void $callback
@@ -229,8 +187,6 @@ trait ExtensionKernelCallbacks
         $this->registeredCallbacks = [];
         $this->bootingCallbacks = [];
         $this->bootedCallbacks = [];
-        $this->activatingCallbacks = [];
-        $this->activatedCallbacks = [];
         $this->discoveringCallbacks = [];
         $this->discoveredCallbacks = [];
         $this->loadingInstalledCallbacks = [];

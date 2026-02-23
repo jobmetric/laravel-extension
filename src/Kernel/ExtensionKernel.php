@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use JobMetric\Extension\Contracts\AbstractExtension;
-use JobMetric\Extension\Events\Kernel\Activated;
-use JobMetric\Extension\Events\Kernel\Activating;
 use JobMetric\Extension\Events\Kernel\Booted;
 use JobMetric\Extension\Events\Kernel\Booting;
 use JobMetric\Extension\Events\Kernel\ExtensionsDiscovered;
@@ -22,10 +20,10 @@ use JobMetric\Extension\Facades\ExtensionTypeRegistry;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 
 /**
- * Extension lifecycle kernel: discover, load installed, register, boot, activate.
+ * Extension lifecycle kernel: discover, load installed, register, boot.
  *
  * Runs after Laravel's provider register phase and before/during boot. Only extensions
- * that exist in the extensions table (installed) receive register(), boot(), activate().
+ * that exist in the extensions table (installed) receive register() and boot().
  * Execution order is determined by AbstractExtension::priority() (lower runs first).
  *
  * Lifecycle phases:
@@ -34,12 +32,10 @@ use JobMetric\Extension\Models\Extension as ExtensionModel;
  * 2. loadInstalledExtensions() – Load rows from extensions table; instantiate and add to kernel.
  * 3. registerExtensions() – Fire registering hooks, call register($app) on each extension, fire registered hooks.
  * 4. bootExtensions()    – Fire booting hooks, call boot($app) on each extension, fire booted hooks.
- * 5. activateExtensions() – Fire activating hooks, call activate($app) on each extension, fire activated hooks.
  *
  * Hooks (callbacks receive this kernel instance):
  * - registering / registered  – Before and after the register phase.
  * - booting / booted          – Before and after the boot phase.
- * - activating / activated    – Before and after the activate phase.
  *
  * @package JobMetric\Extension\Kernel
  */
@@ -215,7 +211,7 @@ class ExtensionKernel
     /**
      * Add a single extension instance to the kernel list (e.g. for testing or manual registration).
      *
-     * @param AbstractExtension $extension Instance that will receive register(), boot(), activate().
+     * @param AbstractExtension $extension Instance that will receive register() and boot().
      *
      * @return self
      */
@@ -276,33 +272,6 @@ class ExtensionKernel
         }
 
         Event::dispatch(new Booted($this));
-
-        return $this;
-    }
-
-    /**
-     * Run the activate phase: firing hooks and calling activate($app) on each extension.
-     *
-     * Order: activating callbacks → extension->activate($app) for each (by priority) → activated callbacks.
-     * Implementations should be idempotent (safe to run multiple times).
-     *
-     * @return self
-     */
-    public function activateExtensions(): self
-    {
-        Event::dispatch(new Activating($this));
-
-        foreach ($this->activatingCallbacks as $callback) {
-            $callback($this);
-        }
-        foreach ($this->extensions() as $extension) {
-            $extension->activate($this->app);
-        }
-        foreach ($this->activatedCallbacks as $callback) {
-            $callback($this);
-        }
-
-        Event::dispatch(new Activated($this));
 
         return $this;
     }
