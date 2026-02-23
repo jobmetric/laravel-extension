@@ -5,10 +5,9 @@ namespace JobMetric\Extension\Support;
 use Illuminate\Support\Arr;
 
 /**
- * Registry for extension types. Replaces the static list from ExtensionTypeEnum
- * with a dynamic list that can be extended at runtime via register() or via
- * config (extension.types). Used by extension:make and other commands to
- * validate and list allowed extension types.
+ * Registry for extension types. Holds a dynamic list that can be extended at
+ * runtime via register() or via config (extension.types). Used by extension:make
+ * and other commands to validate and list allowed extension types.
  *
  * @package JobMetric\Extension
  *
