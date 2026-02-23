@@ -20,7 +20,8 @@ use JobMetric\Extension\Exceptions\ExtensionNotDeletableException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionNotUninstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
-use JobMetric\Extension\Facades\ExtensionType;
+use JobMetric\Extension\Facades\ExtensionRegistry;
+use JobMetric\Extension\Facades\ExtensionTypeRegistry;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -321,14 +322,10 @@ class Extension
         array_pop($namespace_parts);
         $namespace_folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
 
-        $flag = false;
-        ExtensionType::type($type)->getDriverNamespace()->each(function ($item, $key) use (&$flag, $namespace_folder) {
-            if ($key === $namespace_folder && $item['deletable']) {
-                $flag = true;
-            }
-        });
+        $formatType = Str::studly($type);
+        $deletable = (bool) ExtensionTypeRegistry::getOption($formatType, 'deletable', false);
 
-        if ($flag) {
+        if ($deletable) {
             File::deleteDirectory($folder);
         } else {
             throw new ExtensionNotDeletableException($name);
@@ -427,60 +424,21 @@ class Extension
      */
     public function getExtensionWithType(string $type): array
     {
-        $serviceType = ExtensionType::type($type);
         $formatType = Str::studly($type);
-
+        $deletable = (bool) ExtensionTypeRegistry::getOption($formatType, 'deletable', false);
+        $namespaces = ExtensionRegistry::byType($formatType);
         $extensions = [];
-        $serviceType->getDriverNamespace()->each(function ($option, $namespace) use (&$extensions, $formatType) {
-            $path = resolveNamespacePath($namespace);
 
-            if (is_dir($path)) {
-                $realPath = realpath($path);
-                $folders = array_map('basename', File::directories($realPath));
-
-                foreach ($folders as $folder) {
-                    $folder_children = array_map('basename', File::directories($realPath . DIRECTORY_SEPARATOR . $folder));
-
-                    foreach ($folder_children as $folder_child) {
-                        $extensionRunnerAddress = $realPath . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . $folder_child . DIRECTORY_SEPARATOR . $folder_child . '.php';
-                        $extensionConfigAddress = $realPath . DIRECTORY_SEPARATOR . $folder . DIRECTORY_SEPARATOR . $folder_child . DIRECTORY_SEPARATOR . 'extension.json';
-
-                        if (file_exists($extensionRunnerAddress) && file_exists($extensionConfigAddress)) {
-                            $extensionConfig = json_decode(file_get_contents($extensionConfigAddress), true);
-
-                            if (empty($extensionConfig['extension']) || $extensionConfig['extension'] !== $formatType) {
-                                continue;
-                            }
-
-                            if (empty($extensionConfig['name']) || $extensionConfig['name'] !== $folder_child) {
-                                continue;
-                            }
-
-                            if (empty($extensionConfig['title']) || empty($extensionConfig['version'])) {
-                                continue;
-                            }
-
-                            if (isset($extensionConfig['fields'])) {
-                                unset($extensionConfig['fields']);
-                            }
-
-                            if (empty($extensionConfig['multiple'])) {
-                                $extensionConfig['multiple'] = false;
-                            }
-
-                            if (empty($extensionConfig['description'])) {
-                                $extensionConfig['description'] = 'extension::base.extension.default_description';
-                            }
-
-                            $extensions[] = array_merge($extensionConfig, [
-                                'namespace' => $namespace . '\\' . $folder . '\\' . $folder_child . '\\' . $folder_child,
-                                'deletable' => $option['deletable'] ?? false,
-                            ]);
-                        }
-                    }
-                }
+        foreach ($namespaces as $namespace) {
+            $spec = ExtensionRegistry::resolveSpec($namespace);
+            if ($spec === null) {
+                continue;
             }
-        });
+            $extensions[] = array_merge($spec, [
+                'namespace' => $namespace,
+                'deletable' => $deletable,
+            ]);
+        }
 
         return $extensions;
     }

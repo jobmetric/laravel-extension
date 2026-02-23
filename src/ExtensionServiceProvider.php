@@ -42,8 +42,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerClass('ExtensionKernel', ExtensionKernel::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionNamespaceRegistry', ExtensionNamespaceRegistry::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionType', ExtensionType::class, RegisterClassTypeEnum::SINGLETON());
+            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**
