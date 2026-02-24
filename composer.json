@@ -45,6 +45,7 @@
             ],
             "aliases": {
                 "Extension": "JobMetric\\Extension\\Facades\\Extension",
+                "InstalledExtensionsFile": "JobMetric\\Extension\\Facades\\InstalledExtensionsFile",
                 "Plugin": "JobMetric\\Extension\\Facades\\Plugin"
             }
         }
