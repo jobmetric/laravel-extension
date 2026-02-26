@@ -383,7 +383,7 @@ class ExtensionKernel
                 continue;
             }
 
-            $consoleKernelClass = $namespace . '\\ConsoleKernel';
+            $consoleKernelClass = $namespace . '\\Core\\ConsoleKernel';
             if (! class_exists($consoleKernelClass)) {
                 continue;
             }

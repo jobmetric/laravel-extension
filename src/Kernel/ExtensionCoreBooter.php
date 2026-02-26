@@ -140,7 +140,7 @@ class ExtensionCoreBooter
             return;
         }
 
-        $consoleKernelClass = $namespace . '\\ConsoleKernel';
+        $consoleKernelClass = $namespace . '\\Core\\ConsoleKernel';
         if (! class_exists($consoleKernelClass)) {
             return;
         }
@@ -305,7 +305,7 @@ class ExtensionCoreBooter
         $namespace = $core->getNamespace();
 
         if ($namespace !== null) {
-            Blade::componentNamespace($namespace . '\\View\\Components', $configKey);
+            Blade::componentNamespace($namespace . '\\Core\\View\\Components', $configKey);
         }
 
         $extension?->componentLoadedExtension($core, $app);

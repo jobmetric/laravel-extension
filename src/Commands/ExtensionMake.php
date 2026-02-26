@@ -145,7 +145,7 @@ class ExtensionMake extends Command
         }
 
         if ($hasComponent) {
-            $componentDir = $path . DIRECTORY_SEPARATOR . 'View' . DIRECTORY_SEPARATOR . 'Components';
+            $componentDir = $path . DIRECTORY_SEPARATOR . 'Core' . DIRECTORY_SEPARATOR . 'View' . DIRECTORY_SEPARATOR . 'Components';
             File::ensureDirectoryExists($componentDir);
             $this->writeStub($componentDir . DIRECTORY_SEPARATOR . $name . 'Component.php', 'Component.php.stub', $replace);
             $viewDir = $path . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'components';
@@ -154,7 +154,9 @@ class ExtensionMake extends Command
         }
 
         if ($hasConsoleKernel) {
-            $this->writeStub($path . DIRECTORY_SEPARATOR . 'ConsoleKernel.php', 'ConsoleKernel.php.stub', $replace);
+            $coreDir = $path . DIRECTORY_SEPARATOR . 'Core';
+            File::ensureDirectoryExists($coreDir);
+            $this->writeStub($coreDir . DIRECTORY_SEPARATOR . 'ConsoleKernel.php', 'ConsoleKernel.php.stub', $replace);
         }
 
         $this->info('Extension [' . $extension . '/' . $name . '] created successfully.');

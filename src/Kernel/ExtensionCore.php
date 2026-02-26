@@ -222,7 +222,7 @@ class ExtensionCore
     }
 
     /**
-     * Enable Blade components from basePath/View/Components.
+     * Enable Blade components from basePath/Core/View/Components.
      *
      * @return static
      * @throws ExtensionCoreBasePathRequiredException
@@ -231,7 +231,7 @@ class ExtensionCore
      */
     public function hasComponent(): static
     {
-        if (! realpath($this->getBasePath() . DIRECTORY_SEPARATOR . 'View' . DIRECTORY_SEPARATOR . 'Components')) {
+        if (! realpath($this->getBasePath() . DIRECTORY_SEPARATOR . 'Core' . DIRECTORY_SEPARATOR . 'View' . DIRECTORY_SEPARATOR . 'Components')) {
             $this->ensureNameSet();
 
             throw new ExtensionCoreComponentFolderNotFoundException($this->name);
@@ -408,7 +408,7 @@ class ExtensionCore
     }
 
     /**
-     * Enable ConsoleKernel for scheduling. Requires basePath/ConsoleKernel.php; schedule() called from app Kernel.
+     * Enable ConsoleKernel for scheduling. Requires basePath/Core/ConsoleKernel.php; schedule() called from app Kernel.
      *
      * @return static
      * @throws ExtensionCoreBasePathRequiredException
@@ -417,7 +417,7 @@ class ExtensionCore
      */
     public function hasConsoleKernel(): static
     {
-        if (! is_file($this->getBasePath() . DIRECTORY_SEPARATOR . 'ConsoleKernel.php')) {
+        if (! is_file($this->getBasePath() . DIRECTORY_SEPARATOR . 'Core' . DIRECTORY_SEPARATOR . 'ConsoleKernel.php')) {
             $this->ensureNameSet();
 
             throw new ExtensionCoreConsoleKernelFileNotFoundException($this->name);
