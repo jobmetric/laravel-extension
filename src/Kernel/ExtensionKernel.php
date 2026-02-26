@@ -2,10 +2,13 @@
 
 namespace JobMetric\Extension\Kernel;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Events\Kernel\Booted;
@@ -14,10 +17,14 @@ use JobMetric\Extension\Events\Kernel\ExtensionsDiscovered;
 use JobMetric\Extension\Events\Kernel\ExtensionsLoaded;
 use JobMetric\Extension\Events\Kernel\Registered;
 use JobMetric\Extension\Events\Kernel\Registering;
+use JobMetric\Extension\Exceptions\ExtensionCoreBasePathNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionCoreBasePathRequiredException;
+use JobMetric\Extension\Exceptions\ExtensionCoreNameRequiredException;
 use JobMetric\Extension\Facades\ExtensionNamespaceRegistry;
 use JobMetric\Extension\Facades\ExtensionRegistry;
 use JobMetric\Extension\Facades\ExtensionTypeRegistry;
-use JobMetric\Extension\Models\Extension as ExtensionModel;
+use JobMetric\Extension\Facades\InstalledExtensionsFile;
+use ReflectionClass;
 
 /**
  * Extension lifecycle kernel: discover, load installed, register, boot.
@@ -27,17 +34,19 @@ use JobMetric\Extension\Models\Extension as ExtensionModel;
  * Execution order is determined by AbstractExtension::priority() (lower runs first).
  *
  * Lifecycle phases:
- * 1. discover()     – Scan namespaces from ExtensionNamespaceRegistry; register FQCNs in ExtensionRegistry (no
- * instances).
+ * 1. discover()                – Scan namespaces from ExtensionNamespaceRegistry; register FQCNs in ExtensionRegistry
+ *                                (no instances).
  * 2. loadInstalledExtensions() – Load rows from extensions table; instantiate and add to kernel.
- * 3. registerExtensions() – Fire registering hooks, call register($app) on each extension, fire registered hooks.
- * 4. bootExtensions()    – Fire booting hooks, call boot($app) on each extension, fire booted hooks.
+ * 3. registerExtensions()      – Fire registering hooks, call configuration(ExtensionCore) on each extension and apply
+ *                                register (config, bindings), fire registered hooks.
+ * 4. bootExtensions()          – Fire booting hooks, apply boot (migrations, routes, views, translations) per
+ *                                extension, fire booted hooks.
  *
  * Hooks (callbacks receive this kernel instance):
- * - registering / registered  – Before and after the register phase.
- * - booting / booted          – Before and after the boot phase.
+ * - registering / registered   – Before and after the register phase.
+ * - booting / booted           – Before and after the boot phase.
  *
- * @package JobMetric\Extension\Kernel
+ * @package JobMetric\Extension
  */
 class ExtensionKernel
 {
@@ -49,6 +58,13 @@ class ExtensionKernel
      * @var array<int, AbstractExtension>
      */
     protected array $extensions = [];
+
+    /**
+     * ExtensionCore per extension class (FQCN => ExtensionCore), built during registerExtensions().
+     *
+     * @var array<string, ExtensionCore>
+     */
+    protected array $extensionCores = [];
 
     /**
      * @param Application $app
@@ -94,9 +110,11 @@ class ExtensionKernel
                         ExtensionRegistry::register($item['type'], $item['namespace']);
                     }
                 }
+
                 foreach ($this->discoveredCallbacks as $callback) {
                     $callback($this);
                 }
+
                 Event::dispatch(new ExtensionsDiscovered($this));
 
                 return $this;
@@ -135,6 +153,7 @@ class ExtensionKernel
                     }
 
                     ExtensionRegistry::register($type, $fqcn);
+
                     $discovered[] = ['type' => $type, 'namespace' => $fqcn];
                 }
             }
@@ -172,6 +191,7 @@ class ExtensionKernel
      *
      * @return self
      * @throws BindingResolutionException When the container cannot resolve a namespace.
+     * @throws FileNotFoundException
      */
     public function loadInstalledExtensions(): self
     {
@@ -179,11 +199,8 @@ class ExtensionKernel
             $callback($this);
         }
 
-        $extensions = ExtensionModel::all();
-
-        foreach ($extensions as $extension) {
-            $namespace = $extension->namespace ?? '';
-
+        $namespaces = InstalledExtensionsFile::read();
+        foreach ($namespaces as $namespace) {
             if ($namespace === '') {
                 continue;
             }
@@ -211,7 +228,8 @@ class ExtensionKernel
     /**
      * Add a single extension instance to the kernel list (e.g. for testing or manual registration).
      *
-     * @param AbstractExtension $extension Instance that will receive register() and boot().
+     * @param AbstractExtension $extension Instance that will receive configuration(ExtensionCore) during register
+     *                                     phase.
      *
      * @return self
      */
@@ -223,12 +241,14 @@ class ExtensionKernel
     }
 
     /**
-     * Run the register phase: firing hooks and calling register($app) on each extension.
-     *
-     * Order: registering callbacks → extension->register($app) for each (by priority) → registered callbacks.
-     * Extensions should only bind services or config in register(); no routes or runtime wiring.
+     * Run the register phase: firing hooks, calling configuration(ExtensionCore) on each extension and applying
+     * config/bindings, then registered callbacks.
      *
      * @return self
+     * @throws BindingResolutionException
+     * @throws ExtensionCoreBasePathNotFoundException
+     * @throws ExtensionCoreBasePathRequiredException
+     * @throws ExtensionCoreNameRequiredException
      */
     public function registerExtensions(): self
     {
@@ -237,9 +257,15 @@ class ExtensionKernel
         foreach ($this->registeringCallbacks as $callback) {
             $callback($this);
         }
+
         foreach ($this->extensions() as $extension) {
-            $extension->register($this->app);
+            $core = $this->buildExtensionCore($extension);
+            $extension->configuration($core);
+            $this->extensionCores[get_class($extension)] = $core;
+
+            ExtensionCoreBooter::register($core, $this->app, $extension);
         }
+
         foreach ($this->registeredCallbacks as $callback) {
             $callback($this);
         }
@@ -250,23 +276,34 @@ class ExtensionKernel
     }
 
     /**
-     * Run the boot phase: firing hooks and calling boot($app) on each extension.
+     * Run the boot phase: firing hooks and applying routes, views, translations, commands, publishable, etc. per
+     * extension, then booted callbacks. Pass a ServiceProvider for commands; pass publishCallback so the provider
+     * can call its protected publishes() from within its own context.
      *
-     * Order: booting callbacks → extension->boot($app) for each (by priority) → booted callbacks.
-     * Extensions may register routes, events, view composers, etc. here.
+     * @param ServiceProvider|null $provider
+     * @param callable(array, string|array): void|null $publishCallback e.g. fn($paths, $groups) =>
+     *                                                                  $this->publishes($paths, $groups)
      *
      * @return self
+     * @throws BindingResolutionException
+     * @throws ExtensionCoreBasePathRequiredException
+     * @throws ExtensionCoreNameRequiredException
      */
-    public function bootExtensions(): self
+    public function bootExtensions(?ServiceProvider $provider = null, ?callable $publishCallback = null): self
     {
         Event::dispatch(new Booting($this));
 
         foreach ($this->bootingCallbacks as $callback) {
             $callback($this);
         }
+
         foreach ($this->extensions() as $extension) {
-            $extension->boot($this->app);
+            $fqcn = get_class($extension);
+            if (isset($this->extensionCores[$fqcn])) {
+                ExtensionCoreBooter::boot($this->extensionCores[$fqcn], $this->app, $provider, $extension, $publishCallback);
+            }
         }
+
         foreach ($this->bootedCallbacks as $callback) {
             $callback($this);
         }
@@ -277,6 +314,29 @@ class ExtensionKernel
     }
 
     /**
+     * Build ExtensionCore for an extension with basePath and name set.
+     *
+     * @param AbstractExtension $extension
+     *
+     * @return ExtensionCore
+     * @throws ExtensionCoreBasePathRequiredException
+     * @throws ExtensionCoreNameRequiredException
+     * @throws ExtensionCoreBasePathNotFoundException
+     */
+    protected function buildExtensionCore(AbstractExtension $extension): ExtensionCore
+    {
+        $type = Str::studly($extension::extension());
+        $extensionName = Str::studly($extension::name());
+
+        $core = new ExtensionCore();
+        $core->name($type . '_' . $extensionName)
+            ->setBasePath(dirname((new ReflectionClass($extension))->getFileName()))
+            ->setExtensionTypeAndName($type, $extensionName);
+
+        return $core;
+    }
+
+    /**
      * Get all loaded extension instances sorted by dependencies then priority.
      *
      * @return array<int, AbstractExtension>
@@ -284,6 +344,39 @@ class ExtensionKernel
     public function extensions(): array
     {
         return $this->sortByDependenciesAndPriority($this->extensions);
+    }
+
+    /**
+     * Register schedules from all extensions that have hasConsoleKernel. Call this from App\Console\Kernel::schedule().
+     *
+     * @param Schedule $schedule
+     *
+     * @return void
+     * @throws BindingResolutionException
+     * @throws ExtensionCoreBasePathRequiredException
+     */
+    public function registerSchedules(Schedule $schedule): void
+    {
+        foreach ($this->extensionCores as $core) {
+            if (! isset($core->option['hasConsoleKernel'])) {
+                continue;
+            }
+
+            $namespace = $core->getNamespace();
+            if ($namespace === null) {
+                continue;
+            }
+
+            $consoleKernelClass = $namespace . '\\ConsoleKernel';
+            if (! class_exists($consoleKernelClass)) {
+                continue;
+            }
+
+            $kernel = $this->app->make($consoleKernelClass);
+            if (method_exists($kernel, 'schedule')) {
+                $kernel->schedule($schedule);
+            }
+        }
     }
 
     /**
@@ -418,6 +511,7 @@ class ExtensionKernel
     public function reset(): self
     {
         $this->extensions = [];
+        $this->extensionCores = [];
         $this->clearCallbacks();
 
         return $this;

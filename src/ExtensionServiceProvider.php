@@ -3,6 +3,7 @@
 namespace JobMetric\Extension;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use JobMetric\Extension\Facades\ExtensionNamespaceRegistry as FacadeExtensionNamespaceRegistry;
@@ -13,6 +14,7 @@ use JobMetric\Extension\Models\Plugin as PluginModel;
 use JobMetric\Extension\Support\ExtensionNamespaceRegistry;
 use JobMetric\Extension\Support\ExtensionRegistry;
 use JobMetric\Extension\Support\ExtensionTypeRegistry;
+use JobMetric\Extension\Support\InstalledExtensionsFile;
 use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
 use JobMetric\PackageCore\Exceptions\RegisterClassTypeNotFoundException;
@@ -42,7 +44,8 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             ->registerClass('ExtensionKernel', ExtensionKernel::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionNamespaceRegistry', ExtensionNamespaceRegistry::class, RegisterClassTypeEnum::SINGLETON())
             ->registerClass('ExtensionTypeRegistry', ExtensionTypeRegistry::class, RegisterClassTypeEnum::SINGLETON())
-            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON());
+            ->registerClass('ExtensionRegistry', ExtensionRegistry::class, RegisterClassTypeEnum::SINGLETON())
+            ->registerClass('InstalledExtensionsFile', InstalledExtensionsFile::class, RegisterClassTypeEnum::SINGLETON());
     }
 
     /**
@@ -53,10 +56,6 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
      */
     public function afterRegisterPackage(): void
     {
-        // register route model bindings
-        Route::model('jm_extension', ExtensionModel::class);
-        Route::model('jm_plugin', PluginModel::class);
-
         // register extension default namespace
         FacadeExtensionNamespaceRegistry::register(appNamespace() . "Extensions");
 
@@ -73,7 +72,19 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
         });
 
         App::booted(function () use ($kernel) {
-            $kernel->bootExtensions();
+            if (!$this->app->bound('db')) {
+                return;
+            }
+
+            try {
+                // register route model bindings
+                Route::model('jm_extension', ExtensionModel::class);
+                Route::model('jm_plugin', PluginModel::class);
+
+                $kernel->bootExtensions($this, fn (array $paths, $groups) => $this->publishes($paths, $groups));
+            } catch (QueryException $e) {
+                // Table may not exist yet (migrations not run); e.g. during composer dump-autoload / package:discover
+            }
         });
     }
 }

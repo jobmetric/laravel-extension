@@ -2,7 +2,8 @@
 
 namespace JobMetric\Extension\Contracts;
 
-use Illuminate\Contracts\Foundation\Application;
+use JobMetric\Extension\Kernel\EventTrait;
+use JobMetric\Extension\Kernel\ExtensionCore;
 use JobMetric\Form\FormBuilder;
 use Throwable;
 
@@ -21,6 +22,8 @@ use Throwable;
  */
 abstract class AbstractExtension
 {
+    use EventTrait;
+
     /**
      * Type of this extension (e.g. Module, ShippingMethod).
      * Must be one of the types registered in this package's ExtensionTypeRegistry.
@@ -212,24 +215,12 @@ abstract class AbstractExtension
     abstract public function handle(array $options = []): ?string;
 
     /**
-     * Register bindings and configuration. Only interact with the container.
+     * Configure the extension (config, routes, migrations, views, translations, bindings).
+     * Implement to call e.g. $extension->hasConfig()->hasRoute()->registerClass(...).
      *
-     * @param Application $context
-     *
-     * @return void
-     */
-    public function register(Application $context): void
-    {
-    }
-
-    /**
-     * Bootstrap runtime wiring (routes, events, etc.). Run after all providers have booted.
-     *
-     * @param Application $context
+     * @param ExtensionCore $extension
      *
      * @return void
      */
-    public function boot(Application $context): void
-    {
-    }
+    abstract public function configuration(ExtensionCore $extension): void;
 }
