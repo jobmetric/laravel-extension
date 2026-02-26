@@ -277,6 +277,21 @@ class ExtensionKernel
     }
 
     /**
+     * Run upgrade on each extension (compare extension.json version with stored version; run or rollback migrations).
+     * Call this before bootExtensions() so migrations are applied before boot.
+     *
+     * @return self
+     */
+    public function upgradeExtensions(): self
+    {
+        foreach ($this->extensions() as $extension) {
+            $extension->upgrade();
+        }
+
+        return $this;
+    }
+
+    /**
      * Run the boot phase: firing hooks and applying routes, views, translations, commands, publishable, etc. per
      * extension, then booted callbacks. Pass a ServiceProvider for commands; pass publishCallback so the provider
      * can call its protected publishes() from within its own context.

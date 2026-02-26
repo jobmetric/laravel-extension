@@ -81,6 +81,7 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
                 Route::model('jm_extension', ExtensionModel::class);
                 Route::model('jm_plugin', PluginModel::class);
 
+                $kernel->upgradeExtensions();
                 $kernel->bootExtensions($this, fn (array $paths, $groups) => $this->publishes($paths, $groups));
             } catch (QueryException $e) {
                 // Table may not exist yet (migrations not run); e.g. during composer dump-autoload / package:discover
