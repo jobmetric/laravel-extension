@@ -5,18 +5,15 @@ namespace JobMetric\Extension\Contracts;
 use JobMetric\Extension\Kernel\EventTrait;
 use JobMetric\Extension\Kernel\ExtensionCore;
 use JobMetric\Form\FormBuilder;
+use ReflectionClass;
 use Throwable;
 
 /**
  * Base class for every extension in this package.
  *
- * Extensions are identified by type and name, have metadata (version, title,
- * description, author, etc.) and define their plugin configuration via form().
- * toArray() exports that metadata and the form definition for install/list.
- * handle() runs the extension logic with the given plugin data.
- *
- * Concrete extensions must implement: extension(), name(), version(), title(),
- * multiple(), form(), and handle(). The rest have defaults and can be overridden.
+ * Extensions are identified by type and name; metadata (version, title, description,
+ * author, etc.) is read from extension.json in the same directory as the extension class.
+ * Concrete extensions must implement: configuration(), form(), and handle().
  *
  * @package JobMetric\Extension
  */
@@ -25,147 +22,263 @@ abstract class AbstractExtension
     use EventTrait;
 
     /**
-     * Type of this extension (e.g. Module, ShippingMethod).
-     * Must be one of the types registered in this package's ExtensionTypeRegistry.
+     * Cached extension.json data per class.
      *
-     * @return string
+     * @var array<string, array<string, mixed>>
      */
-    abstract public static function extension(): string;
+    protected static array $extensionDataCache = [];
 
     /**
-     * Short name/slug of this extension (e.g. Banner).
-     * Used in directory layout and as the extension runner class name.
+     * Configure the extension.
      *
-     * @return string
+     * @param ExtensionCore $extension
+     *
+     * @return void
      */
-    abstract public static function name(): string;
+    abstract public function configuration(ExtensionCore $extension): void;
 
     /**
-     * Extension version (semantic, e.g. 1.0.0).
-     *
-     * @return string
-     */
-    abstract public static function version(): string;
-
-    /**
-     * Human-readable title (translation key or plain text).
-     * Shown in the extension list and when creating the first plugin.
-     *
-     * @return string
-     */
-    abstract public static function title(): string;
-
-    /**
-     * True if this extension can have more than one plugin; false for a single plugin per extension.
-     *
-     * @return bool
-     */
-    abstract public static function multiple(): bool;
-
-    /**
-     * Execution priority. Lower value runs first (register, boot). Override to change.
-     *
-     * @return int
-     */
-    public static function priority(): int
-    {
-        return 0;
-    }
-
-    /**
-     * FQCNs of extensions this one depends on; they will run before this extension.
-     * Used for topological sort. Override to declare dependencies.
-     *
-     * @return array<int, string>
-     */
-    public static function depends(): array
-    {
-        return [];
-    }
-
-    /**
-     * Short description of the extension (translation key or plain text).
-     * Shown in the extension list. Override to change the default.
-     *
-     * @return string
-     */
-    public static function description(): string
-    {
-        return 'extension::base.extension.default_description';
-    }
-
-    /**
-     * Author name. Override to set.
-     *
-     * @return string|null
-     */
-    public static function author(): ?string
-    {
-        return 'Job Metric';
-    }
-
-    /**
-     * Author email. Override to set.
-     *
-     * @return string|null
-     */
-    public static function email(): ?string
-    {
-        return 'jobmetricnet@gmail.com';
-    }
-
-    /**
-     * Author or extension website URL. Override to set.
-     *
-     * @return string|null
-     */
-    public static function website(): ?string
-    {
-        return 'https://jobmetric.github.io';
-    }
-
-    /**
-     * Date when the extension was created (e.g. Y-m-d). Override to set.
-     *
-     * @return string|null
-     */
-    public static function creationDate(): ?string
-    {
-        return null;
-    }
-
-    /**
-     * Copyright text. Override to set.
-     *
-     * @return string|null
-     */
-    public static function copyright(): ?string
-    {
-        return 'Job Metric Copyright (' . date('Y') . ')';
-    }
-
-    /**
-     * License name (e.g. MIT). Override to set.
-     *
-     * @return string|null
-     */
-    public static function license(): ?string
-    {
-        return 'Job Metric Licence';
-    }
-
-    /**
-     * Build and return the form used to configure a plugin for this extension.
-     * The installer and plugin UI use this to render and validate plugin fields.
+     * Define the form for this extension's plugins.
      *
      * @return FormBuilder
      */
     abstract public function form(): FormBuilder;
 
     /**
+     * Handle the extension logic with the given plugin data.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return string|null
+     */
+    abstract public function handle(array $options = []): ?string;
+
+    /**
+     * Install the extension
+     *
+     * @return void
+     */
+    protected function install(): void
+    {
+        //
+    }
+
+    /**
+     * Uninstall the extension
+     *
+     * @return void
+     */
+    protected function uninstall(): void
+    {
+        //
+    }
+
+    /**
+     * Upgrade the extension
+     *
+     * @return void
+     */
+    protected function upgrade(): void
+    {
+        //
+    }
+
+    /**
+     * Path to extension.json (same directory as the extension class file).
+     *
+     * @return string
+     */
+    protected static function getExtensionJsonPath(): string
+    {
+        return dirname((new ReflectionClass(static::class))->getFileName()) . DIRECTORY_SEPARATOR . 'extension.json';
+    }
+
+    /**
+     * Decoded extension.json data; cached per class. Keys: extension, name, version, title, multiple, priority,
+     * depends, description, author, email, website, creationDate, copyright, license.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function getExtensionData(): array
+    {
+        $class = static::class;
+        if (isset(static::$extensionDataCache[$class])) {
+            return static::$extensionDataCache[$class];
+        }
+
+        $path = static::getExtensionJsonPath();
+
+        $data = [];
+        if (is_file($path)) {
+            $json = @file_get_contents($path);
+            if ($json !== false) {
+                $decoded = json_decode($json, true);
+                $data = is_array($decoded) ? $decoded : [];
+            }
+        }
+
+        static::$extensionDataCache[$class] = $data;
+
+        return $data;
+    }
+
+    /**
+     * Type of this extension (e.g. Module, PaymentMethod). From extension.json.
+     *
+     * @return string
+     */
+    public static function extension(): string
+    {
+        return (string) (static::getExtensionData()['extension'] ?? '');
+    }
+
+    /**
+     * Short name/slug of this extension (e.g. Banner). From extension.json.
+     *
+     * @return string
+     */
+    public static function name(): string
+    {
+        return (string) (static::getExtensionData()['name'] ?? '');
+    }
+
+    /**
+     * Extension version (semantic). From extension.json.
+     *
+     * @return string
+     */
+    public static function version(): string
+    {
+        return (string) (static::getExtensionData()['version'] ?? '1.0.0');
+    }
+
+    /**
+     * Human-readable title (translation key or plain text). From extension.json.
+     *
+     * @return string
+     */
+    public static function title(): string
+    {
+        return (string) (static::getExtensionData()['title'] ?? '');
+    }
+
+    /**
+     * True if this extension can have more than one plugin. From extension.json.
+     *
+     * @return bool
+     */
+    public static function multiple(): bool
+    {
+        return (bool) (static::getExtensionData()['multiple'] ?? false);
+    }
+
+    /**
+     * Execution priority. Lower runs first. From extension.json.
+     *
+     * @return int
+     */
+    public static function priority(): int
+    {
+        return (int) (static::getExtensionData()['priority'] ?? 0);
+    }
+
+    /**
+     * FQCNs of extensions this one depends on. From extension.json.
+     *
+     * @return array<int, string>
+     */
+    public static function depends(): array
+    {
+        $v = static::getExtensionData()['depends'] ?? [];
+
+        return is_array($v) ? array_values($v) : [];
+    }
+
+    /**
+     * Short description (translation key or plain text). From extension.json.
+     *
+     * @return string
+     */
+    public static function description(): string
+    {
+        return (string) (static::getExtensionData()['description'] ?? 'extension::base.extension.default_description');
+    }
+
+    /**
+     * Author name. From extension.json.
+     *
+     * @return string|null
+     */
+    public static function author(): ?string
+    {
+        $v = static::getExtensionData()['author'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
+     * Author email. From extension.json.
+     *
+     * @return string|null
+     */
+    public static function email(): ?string
+    {
+        $v = static::getExtensionData()['email'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
+     * Author or extension website URL. From extension.json.
+     *
+     * @return string|null
+     */
+    public static function website(): ?string
+    {
+        $v = static::getExtensionData()['website'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
+     * Date when the extension was created. From extension.json.
+     *
+     * @return string|null
+     */
+    public static function creationDate(): ?string
+    {
+        $v = static::getExtensionData()['creationDate'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
+     * Copyright text. From extension.json.
+     *
+     * @return string|null
+     */
+    public static function copyright(): ?string
+    {
+        $v = static::getExtensionData()['copyright'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
+     * License name (e.g. MIT). From extension.json.
+     *
+     * @return string|null
+     */
+    public static function license(): ?string
+    {
+        $v = static::getExtensionData()['license'] ?? null;
+
+        return $v === '' || $v === null ? null : (string) $v;
+    }
+
+    /**
      * Export extension metadata and form definition as an array.
-     * Used by the installer and listing; structure matches what extension.json used to provide.
-     * The "form" key holds the full form definition (tabs, fields, etc.) from form()->build()->toArray().
+     * Used by the installer and listing; structure aligns with extension.json fields plus form.
      *
      * @return array{
      *     extension: string,
@@ -174,6 +287,8 @@ abstract class AbstractExtension
      *     title: string,
      *     description: string,
      *     multiple: bool,
+     *     priority: int,
+     *     depends: array<int, string>,
      *     author?: string|null,
      *     email?: string|null,
      *     website?: string|null,
@@ -194,6 +309,8 @@ abstract class AbstractExtension
             'title'        => static::title(),
             'description'  => static::description(),
             'multiple'     => static::multiple(),
+            'priority'     => static::priority(),
+            'depends'      => static::depends(),
             'author'       => static::author(),
             'email'        => static::email(),
             'website'      => static::website(),
@@ -203,24 +320,4 @@ abstract class AbstractExtension
             'form'         => $this->form()->build()->toArray(),
         ];
     }
-
-    /**
-     * Execute this extension with the given plugin data (field values and options).
-     * Concrete extensions implement the actual logic here.
-     *
-     * @param array<string, mixed> $options Plugin field values and any extra options.
-     *
-     * @return string|null Result or output; null if nothing to return.
-     */
-    abstract public function handle(array $options = []): ?string;
-
-    /**
-     * Configure the extension (config, routes, migrations, views, translations, bindings).
-     * Implement to call e.g. $extension->hasConfig()->hasRoute()->registerClass(...).
-     *
-     * @param ExtensionCore $extension
-     *
-     * @return void
-     */
-    abstract public function configuration(ExtensionCore $extension): void;
 }
