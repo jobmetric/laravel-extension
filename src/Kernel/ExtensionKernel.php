@@ -139,7 +139,8 @@ class ExtensionKernel
                 foreach ($extensionDirs as $extDir) {
                     $name = basename($extDir);
                     $classFile = $extDir . DIRECTORY_SEPARATOR . $name . '.php';
-                    if (! is_file($classFile)) {
+                    $extensionJson = $extDir . DIRECTORY_SEPARATOR . 'extension.json';
+                    if (! is_file($classFile) || ! is_file($extensionJson)) {
                         continue;
                     }
 
