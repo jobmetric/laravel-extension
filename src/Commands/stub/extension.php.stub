@@ -4,8 +4,8 @@ namespace App\Extensions\{{extension}}\{{name}};
 
 use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Kernel\ExtensionCore;
-use JobMetric\Form\FormBuilder;
-{{configurationThrowsUse}}
+use JobMetric\Form\FormBuilder;{{configurationThrowsUse}}
+use Throwable;
 
 class {{name}} extends AbstractExtension
 {
@@ -15,7 +15,7 @@ class {{name}} extends AbstractExtension
      * @param ExtensionCore $extension
      *
      * @return void
-     * {{configurationThrows}}
+{{configurationThrows}}
      */
     public function configuration(ExtensionCore $extension): void
     {

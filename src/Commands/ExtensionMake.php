@@ -21,7 +21,7 @@ class ExtensionMake extends Command
         {--m|multiple : Allow multiple plugin instances}
         {--c|config : Has config (config.php)}
         {--t|translation : Has translation (lang)}
-        {--v|view : Has views (resources/views)}
+        {--w|view : Has views (resources/views)}
         {--r|route : Has routes (routes/route.php)}
         {--a|asset : Has assets}
         {--p|component : Has Blade component (View/Components)}
@@ -326,7 +326,7 @@ class ExtensionMake extends Command
         $namespace = 'JobMetric\\Extension\\Exceptions';
         $useLines = array_map(fn (string $class) => 'use ' . $namespace . '\\' . $class . ';', $unique);
         $useBlock = "\n" . implode("\n", $useLines);
-        $throwsBlock = implode("\n * ", array_map(fn (string $class) => '@throws ' . $class, $unique));
+        $throwsBlock = "     * " . implode("\n     * ", array_map(fn (string $class) => '@throws ' . $class, $unique));
 
         return [$useBlock, $throwsBlock];
     }
