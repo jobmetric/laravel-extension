@@ -3,6 +3,8 @@
     "name": "{{name}}",
     "version": "1.0.0",
     "multiple": {{multiple}},
+    "priority": 0,
+    "depends": [],
     "title": "",
     "description": "",
     "author": "",
@@ -10,6 +12,5 @@
     "website": "",
     "creationDate": "{{date}}",
     "copyright": "Copyright (c) 2021",
-    "license": "MIT",
-    "fields": []
+    "license": "MIT"
 }

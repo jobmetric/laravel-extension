@@ -1,0 +1,4 @@
+{{-- Extension {{extension}}/{{name}} --}}
+<div>
+    {{ $slot ?? '' }}
+</div>
