@@ -5,6 +5,7 @@ namespace App\Extensions\{{extension}}\{{name}};
 use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Kernel\ExtensionCore;
 use JobMetric\Form\FormBuilder;
+{{configurationThrowsUse}}
 
 class {{name}} extends AbstractExtension
 {
@@ -14,6 +15,7 @@ class {{name}} extends AbstractExtension
      * @param ExtensionCore $extension
      *
      * @return void
+     * {{configurationThrows}}
      */
     public function configuration(ExtensionCore $extension): void
     {

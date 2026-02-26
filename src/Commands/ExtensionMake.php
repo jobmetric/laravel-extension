@@ -105,6 +105,7 @@ class ExtensionMake extends Command
 
         $chain = $this->buildConfigurationChain($hasConfig, $hasTranslation, $hasView, $hasRoute, $hasAsset, $hasComponent, $hasConsoleKernel);
         $replace['configurationChain'] = $chain;
+        [$replace['configurationThrowsUse'], $replace['configurationThrows']] = $this->buildConfigurationThrows($hasConfig, $hasTranslation, $hasView, $hasRoute, $hasAsset, $hasComponent, $hasConsoleKernel);
 
         File::ensureDirectoryExists($path);
 
@@ -235,6 +236,77 @@ class ExtensionMake extends Command
         }
 
         return '->' . ltrim(implode('', $calls), '->');
+    }
+
+    /**
+     * Build use statements (for top of file) and PHPDoc @throws lines (short class names) for configuration().
+     * Returns [useBlock, throwsBlock]; useBlock is empty when no chain methods selected.
+     *
+     * @param bool $hasConfig
+     * @param bool $hasTranslation
+     * @param bool $hasView
+     * @param bool $hasRoute
+     * @param bool $hasAsset
+     * @param bool $hasComponent
+     * @param bool $hasConsoleKernel
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function buildConfigurationThrows(
+        bool $hasConfig,
+        bool $hasTranslation,
+        bool $hasView,
+        bool $hasRoute,
+        bool $hasAsset,
+        bool $hasComponent,
+        bool $hasConsoleKernel
+    ): array {
+        $exceptions = [];
+        if ($hasConfig) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreConfigFileNotFoundException';
+        }
+        if ($hasTranslation) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreLangFolderNotFoundException';
+        }
+        if ($hasView) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreViewFolderNotFoundException';
+        }
+        if ($hasRoute) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreRouteFileNotFoundException';
+        }
+        if ($hasAsset) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreAssetFolderNotFoundException';
+        }
+        if ($hasComponent) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreComponentFolderNotFoundException';
+        }
+        if ($hasConsoleKernel) {
+            $exceptions[] = 'ExtensionCoreBasePathRequiredException';
+            $exceptions[] = 'ExtensionCoreNameRequiredException';
+            $exceptions[] = 'ExtensionCoreConsoleKernelFileNotFoundException';
+        }
+        $unique = array_unique($exceptions);
+        if ($unique === []) {
+            return ['', ''];
+        }
+        $namespace = 'JobMetric\\Extension\\Exceptions';
+        $useLines = array_map(fn (string $class) => 'use ' . $namespace . '\\' . $class . ';', $unique);
+        $useBlock = "\n" . implode("\n", $useLines);
+        $throwsBlock = implode("\n * ", array_map(fn (string $class) => '@throws ' . $class, $unique));
+
+        return [$useBlock, $throwsBlock];
     }
 
     /**
