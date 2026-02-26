@@ -12,6 +12,7 @@ return [
 
     "tables" => [
         'extension' => 'extensions',
+        'extension_migration' => 'extension_migrations',
         'plugin' => 'plugins',
     ],
 
