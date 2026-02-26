@@ -18,7 +18,14 @@ class ExtensionMake extends Command
     protected $signature = 'extension:make
         {extension? : Extension type (e.g. Module)}
         {name? : Extension name (e.g. Banner)}
-        {--m|multiple : Allow multiple plugin instances}';
+        {--m|multiple : Allow multiple plugin instances}
+        {--c|config : Has config (config.php)}
+        {--t|translation : Has translation (lang)}
+        {--v|view : Has views (resources/views)}
+        {--r|route : Has routes (routes/route.php)}
+        {--a|asset : Has assets}
+        {--p|component : Has Blade component (View/Components)}
+        {--k|console-kernel : Has ConsoleKernel (schedule)}';
 
     /**
      * The console command description.
@@ -68,7 +75,7 @@ class ExtensionMake extends Command
         $extension = Str::studly(trim($extension));
         $name = Str::studly(trim($name));
 
-        $path = base_path(appFolderName() . '/Extensions/' . $extension . '/' . $name);
+        $path = base_path(appFolderName() . DIRECTORY_SEPARATOR . 'Extensions' . DIRECTORY_SEPARATOR . $extension . DIRECTORY_SEPARATOR . $name);
         if (File::isDirectory($path)) {
             $this->error('Extension already exists: ' . $extension . '/' . $name);
 
@@ -81,18 +88,14 @@ class ExtensionMake extends Command
             return 3;
         }
 
-        $multiple = (bool) $this->option('multiple');
-        if (! $this->option('multiple') && $this->input->isInteractive()) {
-            $multiple = $this->confirm('Multiple plugin instances?');
-        }
-
-        $hasConfig = ! $this->input->isInteractive() || $this->confirm('Has config (config.php)?', true);
-        $hasTranslation = ! $this->input->isInteractive() || $this->confirm('Has translation (lang)?', true);
-        $hasView = $this->input->isInteractive() && $this->confirm('Has views (resources/views)?');
-        $hasRoute = $this->input->isInteractive() && $this->confirm('Has routes (routes/route.php)?');
-        $hasAsset = $this->input->isInteractive() && $this->confirm('Has assets (assets)?');
-        $hasComponent = $this->input->isInteractive() && $this->confirm('Has Blade component (View/Components)?');
-        $hasConsoleKernel = $this->input->isInteractive() && $this->confirm('Has ConsoleKernel (schedule)?');
+        $multiple = $this->resolveBooleanOption('multiple', fn () => $this->confirm('Multiple plugin instances?'), false);
+        $hasConfig = $this->resolveBooleanOption('config', fn () => $this->confirm('Has config (config.php)?', true), true);
+        $hasTranslation = $this->resolveBooleanOption('translation', fn () => $this->confirm('Has translation (lang)?', true), true);
+        $hasView = $this->resolveBooleanOption('view', fn () => $this->confirm('Has views (resources/views)?'), false);
+        $hasRoute = $this->resolveBooleanOption('route', fn () => $this->confirm('Has routes (routes/route.php)?'), false);
+        $hasAsset = $this->resolveBooleanOption('asset', fn () => $this->confirm('Has assets (assets)?'), false);
+        $hasComponent = $this->resolveBooleanOption('component', fn () => $this->confirm('Has Blade component (View/Components)?'), false);
+        $hasConsoleKernel = $this->resolveBooleanOption('console-kernel', fn () => $this->confirm('Has ConsoleKernel (schedule)?'), false);
 
         $replace = [
             'extension' => $extension,
@@ -113,48 +116,68 @@ class ExtensionMake extends Command
         $this->writeExtensionJson($path, $replace);
 
         if ($hasConfig) {
-            $this->writeStub($path . '/config.php', 'config.php.stub', $replace);
+            $this->writeStub($path . DIRECTORY_SEPARATOR . 'config.php', 'config.php.stub', $replace);
         }
 
         if ($hasTranslation) {
-            $langPath = $path . '/lang/en';
+            $langPath = $path . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en';
             File::ensureDirectoryExists($langPath);
-            $this->writeStub($langPath . '/extension.php', 'lang-extension.php.stub', $replace);
+            $this->writeStub($langPath . DIRECTORY_SEPARATOR . 'extension.php', 'lang-extension.php.stub', $replace);
         }
 
         if ($hasView) {
-            $viewPath = $path . '/resources/views';
+            $viewPath = $path . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views';
             File::ensureDirectoryExists($viewPath);
-            $this->writeStub($viewPath . '/sample.blade.php', 'view.blade.php.stub', $replace);
+            $this->writeStub($viewPath . DIRECTORY_SEPARATOR . 'sample.blade.php', 'view.blade.php.stub', $replace);
         }
 
         if ($hasRoute) {
-            $routeDir = $path . '/routes';
+            $routeDir = $path . DIRECTORY_SEPARATOR . 'routes';
             File::ensureDirectoryExists($routeDir);
-            $this->writeStub($routeDir . '/route.php', 'route.php.stub', $replace);
+            $this->writeStub($routeDir . DIRECTORY_SEPARATOR . 'route.php', 'route.php.stub', $replace);
         }
 
         if ($hasAsset) {
-            File::ensureDirectoryExists($path . '/assets');
-            File::put($path . '/assets/.gitkeep', '');
+            File::ensureDirectoryExists($path . DIRECTORY_SEPARATOR . 'assets');
+            File::put($path . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . '.gitkeep', '');
         }
 
         if ($hasComponent) {
-            $componentDir = $path . '/View/Components';
+            $componentDir = $path . DIRECTORY_SEPARATOR . 'View' . DIRECTORY_SEPARATOR . 'Components';
             File::ensureDirectoryExists($componentDir);
-            $this->writeStub($componentDir . '/' . $name . 'Component.php', 'Component.php.stub', $replace);
-            $viewDir = $path . '/resources/views/components';
+            $this->writeStub($componentDir . DIRECTORY_SEPARATOR . $name . 'Component.php', 'Component.php.stub', $replace);
+            $viewDir = $path . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'components';
             File::ensureDirectoryExists($viewDir);
-            $this->writeStub($viewDir . '/' . Str::snake($name) . '-component.blade.php', 'component-view.blade.php.stub', $replace);
+            $this->writeStub($viewDir . DIRECTORY_SEPARATOR . Str::snake($name) . '-component.blade.php', 'component-view.blade.php.stub', $replace);
         }
 
         if ($hasConsoleKernel) {
-            $this->writeStub($path . '/ConsoleKernel.php', 'ConsoleKernel.php.stub', $replace);
+            $this->writeStub($path . DIRECTORY_SEPARATOR . 'ConsoleKernel.php', 'ConsoleKernel.php.stub', $replace);
         }
 
         $this->info('Extension [' . $extension . '/' . $name . '] created successfully.');
 
         return 0;
+    }
+
+    /**
+     * Resolve a boolean from option: if option passed return true, otherwise ask when interactive or return default.
+     *
+     * @param string $option
+     * @param callable $ask
+     * @param bool $default
+     *
+     * @return bool
+     */
+    private function resolveBooleanOption(string $option, callable $ask, bool $default): bool
+    {
+        if ($this->option($option)) {
+            return true;
+        }
+        if ($this->input->isInteractive()) {
+            return (bool) $ask();
+        }
+        return $default;
     }
 
     /**
@@ -239,8 +262,7 @@ class ExtensionMake extends Command
     }
 
     /**
-     * Build use statements (for top of file) and PHPDoc @throws lines (short class names) for configuration().
-     * Returns [useBlock, throwsBlock]; useBlock is empty when no chain methods selected.
+     * Build the list of exceptions that the configuration method may throw based on the selected options.
      *
      * @param bool $hasConfig
      * @param bool $hasTranslation
@@ -320,7 +342,7 @@ class ExtensionMake extends Command
      */
     private function getStub(string $name, array $replace): string
     {
-        $path = __DIR__ . '/stub/' . $name;
+        $path = __DIR__ . DIRECTORY_SEPARATOR . 'stub' . DIRECTORY_SEPARATOR . $name;
         if (! File::isFile($path)) {
             return '';
         }
@@ -371,7 +393,7 @@ class ExtensionMake extends Command
     private function writeExtensionClass(string $path, string $name, array $replace): void
     {
         $content = $this->getStub('extension.php.stub', $replace);
-        File::put($path . '/' . $name . '.php', $content);
+        File::put($path . DIRECTORY_SEPARATOR . $name . '.php', $content);
     }
 
     /**
@@ -391,6 +413,6 @@ class ExtensionMake extends Command
     private function writeExtensionJson(string $path, array $replace): void
     {
         $content = $this->getStub('extension.json.stub', $replace);
-        File::put($path . '/extension.json', $content);
+        File::put($path . DIRECTORY_SEPARATOR . 'extension.json', $content);
     }
 }
