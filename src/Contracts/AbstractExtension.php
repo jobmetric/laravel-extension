@@ -3,6 +3,7 @@
 namespace JobMetric\Extension\Contracts;
 
 use Illuminate\Support\Facades\Event;
+use JobMetric\Extension\Events\ExtensionMigrationsRollbackEvent;
 use JobMetric\Extension\Events\ExtensionMigrationsRunEvent;
 use JobMetric\Extension\Kernel\EventTrait;
 use JobMetric\Extension\Kernel\ExtensionCore;
@@ -132,13 +133,40 @@ abstract class AbstractExtension
     }
 
     /**
-     * Uninstall the extension
+     * Uninstall: rollback extension migrations in reverse order of install; remove records from extension_migrations; fire event after.
+     * Uses migration filenames stored in extension_migrations; runs down() when file exists and has the method.
      *
      * @return void
      */
     protected function uninstall(): void
     {
-        //
+        $basePath = dirname((new ReflectionClass($this))->getFileName());
+        $migrationsPath = $basePath . DIRECTORY_SEPARATOR . 'migrations';
+        $extension = static::extension();
+        $name = static::name();
+
+        $rows = ExtensionMigration::query()
+            ->where('extension', $extension)
+            ->where('name', $name)
+            ->orderByDesc('id')
+            ->get();
+
+        $rollback = [];
+        foreach ($rows as $row) {
+            $path = $migrationsPath . DIRECTORY_SEPARATOR . $row->migration;
+            if (is_file($path)) {
+                $migration = require $path;
+                if (is_object($migration) && method_exists($migration, 'down')) {
+                    $migration->down();
+                }
+            }
+
+            $row->delete();
+
+            $rollback[] = $row->migration;
+        }
+
+        Event::dispatch(new ExtensionMigrationsRollbackEvent($this, $rollback));
     }
 
     /**
