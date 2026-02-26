@@ -153,7 +153,7 @@ class ExtensionCoreBooter
     }
 
     /**
-     * Merge extension config.php into app config under extension_{type}_{name} (e.g. extension_module_banner). Calls
+     * Merge extension config/config.php into app config under extension_{type}_{name} (e.g. extension_module_banner). Calls
      * configLoadedExtension when done.
      *
      * @param ExtensionCore $core
@@ -176,7 +176,7 @@ class ExtensionCoreBooter
         }
 
         $config = $app->make('config');
-        $config->set($configKey, array_merge(require $core->getBasePath() . DIRECTORY_SEPARATOR . 'config.php', $config->get($configKey, [])));
+        $config->set($configKey, array_merge(require $core->getBasePath() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php', $config->get($configKey, [])));
 
         $extension?->configLoadedExtension($core, $app);
     }

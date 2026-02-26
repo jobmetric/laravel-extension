@@ -116,7 +116,9 @@ class ExtensionMake extends Command
         $this->writeExtensionJson($path, $replace);
 
         if ($hasConfig) {
-            $this->writeStub($path . DIRECTORY_SEPARATOR . 'config.php', 'config.php.stub', $replace);
+            $configDir = $path . DIRECTORY_SEPARATOR . 'config';
+            File::ensureDirectoryExists($configDir);
+            $this->writeStub($configDir . DIRECTORY_SEPARATOR . 'config.php', 'config.php.stub', $replace);
         }
 
         if ($hasTranslation) {

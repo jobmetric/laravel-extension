@@ -111,7 +111,7 @@ class ExtensionCore
     }
 
     /**
-     * Enable config loading. Requires basePath/config.php (one config file per extension).
+     * Enable config loading. Requires basePath/config/config.php (one config file per extension).
      *
      * @return static
      * @throws ExtensionCoreBasePathRequiredException
@@ -120,7 +120,7 @@ class ExtensionCore
      */
     public function hasConfig(): static
     {
-        if (! is_file($this->getBasePath() . DIRECTORY_SEPARATOR . 'config.php')) {
+        if (! is_file($this->getBasePath() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php')) {
             $this->ensureNameSet();
 
             throw new ExtensionCoreConfigFileNotFoundException($this->name);
