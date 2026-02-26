@@ -2,8 +2,11 @@
 
 namespace JobMetric\Extension\Contracts;
 
+use Illuminate\Support\Facades\Event;
+use JobMetric\Extension\Events\ExtensionMigrationsRunEvent;
 use JobMetric\Extension\Kernel\EventTrait;
 use JobMetric\Extension\Kernel\ExtensionCore;
+use JobMetric\Extension\Models\ExtensionMigration;
 use JobMetric\Form\FormBuilder;
 use ReflectionClass;
 use Throwable;
@@ -54,13 +57,78 @@ abstract class AbstractExtension
     abstract public function handle(array $options = []): ?string;
 
     /**
-     * Install the extension
+     * Run extension migrations up to current version from extension.json; record each in extension_migrations; fire
+     * event after. Migration files: migrations/date__version__name.php (date = Y_m_d_His, version = from
+     * extension.json style, name = any).
      *
      * @return void
      */
-    protected function install(): void
+    public function install(): void
     {
-        //
+        $basePath = dirname((new ReflectionClass($this))->getFileName());
+        $migrationsPath = $basePath . DIRECTORY_SEPARATOR . 'migrations';
+        if (! is_dir($migrationsPath)) {
+            Event::dispatch(new ExtensionMigrationsRunEvent($this, []));
+
+            return;
+        }
+
+        $currentVersion = static::version();
+        $extension = static::extension();
+        $name = static::name();
+        $alreadyRun = ExtensionMigration::query()
+            ->where('extension', $extension)
+            ->where('name', $name)
+            ->pluck('migration')
+            ->flip()
+            ->all();
+
+        $files = glob($migrationsPath . DIRECTORY_SEPARATOR . '*.php') ?: [];
+
+        $toRun = [];
+        foreach ($files as $file) {
+            $basename = basename($file);
+            $parts = explode('__', pathinfo($basename, PATHINFO_FILENAME), 3);
+            if (count($parts) < 3) {
+                continue;
+            }
+
+            [, $versionPart,] = $parts;
+            $fileVersion = str_replace('_', '.', $versionPart);
+            if (version_compare($fileVersion, $currentVersion, '>')) {
+                continue;
+            }
+
+            if (isset($alreadyRun[$basename])) {
+                continue;
+            }
+
+            $toRun[] = [
+                'path'     => $file,
+                'basename' => $basename,
+                'date'     => $parts[0],
+            ];
+        }
+        usort($toRun, fn ($a, $b) => strcmp($a['date'], $b['date']));
+
+        $run = [];
+        foreach ($toRun as $item) {
+            $path = $item['path'];
+            $migration = require $path;
+            if (is_object($migration) && method_exists($migration, 'up')) {
+                $migration->up();
+            }
+
+            ExtensionMigration::query()->create([
+                'extension' => $extension,
+                'name'      => $name,
+                'migration' => $item['basename'],
+            ]);
+
+            $run[] = $item['basename'];
+        }
+
+        Event::dispatch(new ExtensionMigrationsRunEvent($this, $run));
     }
 
     /**
