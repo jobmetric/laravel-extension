@@ -122,9 +122,11 @@ class ExtensionMake extends Command
         }
 
         if ($hasTranslation) {
-            $langPath = $path . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . 'en';
-            File::ensureDirectoryExists($langPath);
-            $this->writeStub($langPath . DIRECTORY_SEPARATOR . 'extension.php', 'lang-extension.php.stub', $replace);
+            foreach (['en', 'fa'] as $locale) {
+                $langPath = $path . DIRECTORY_SEPARATOR . 'lang' . DIRECTORY_SEPARATOR . $locale;
+                File::ensureDirectoryExists($langPath);
+                $this->writeStub($langPath . DIRECTORY_SEPARATOR . 'extension.php', 'lang-extension.php.stub', $replace);
+            }
         }
 
         if ($hasView) {
