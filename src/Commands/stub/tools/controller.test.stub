@@ -1,0 +1,17 @@
+<?php
+
+namespace {{namespace}};
+
+use PHPUnit\Framework\TestCase;
+use {{controllerFqcn}};
+
+class {{class}} extends TestCase
+{
+    /**
+     * A basic test example.
+     */
+    public function test_example(): void
+    {
+        $this->assertTrue(true);
+    }
+}

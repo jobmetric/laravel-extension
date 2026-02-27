@@ -1,0 +1,97 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Contracts\Auth\Authenticatable;
+
+class {{class}}
+{
+    /**
+     * Determine whether the user can view any models.
+     *
+     * @param Authenticatable $user
+     *
+     * @return bool
+     */
+    public function viewAny(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     *
+     * @param Authenticatable $user
+     * @param mixed $model
+     *
+     * @return bool
+     */
+    public function view(Authenticatable $user, mixed $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param Authenticatable $user
+     *
+     * @return bool
+     */
+    public function create(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     *
+     * @param Authenticatable $user
+     * @param mixed $model
+     *
+     * @return bool
+     */
+    public function update(Authenticatable $user, mixed $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param Authenticatable $user
+     * @param mixed $model
+     *
+     * @return bool
+     */
+    public function delete(Authenticatable $user, mixed $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     *
+     * @param Authenticatable $user
+     * @param mixed $model
+     *
+     * @return bool
+     */
+    public function restore(Authenticatable $user, mixed $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     *
+     * @param Authenticatable $user
+     * @param mixed $model
+     *
+     * @return bool
+     */
+    public function forceDelete(Authenticatable $user, mixed $model): bool
+    {
+        return true;
+    }
+}

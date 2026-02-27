@@ -1,0 +1,21 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+
+class {{class}} extends Controller
+{
+    /**
+     * Handle the incoming request.
+     *
+     * @param Request $request
+     *
+     * @return mixed
+     */
+    public function __invoke(Request $request): mixed
+    {
+        //
+    }
+}

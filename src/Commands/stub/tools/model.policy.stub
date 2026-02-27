@@ -1,0 +1,72 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Contracts\Auth\Authenticatable;
+use {{modelClass}};
+
+class {{class}}Policy
+{
+    /**
+     * Determine whether the user can view any models.
+     *
+     * @param Authenticatable $user
+     *
+     * @return bool
+     */
+    public function viewAny(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     *
+     * @param Authenticatable $user
+     * @param {{modelShort}} $model
+     *
+     * @return bool
+     */
+    public function view(Authenticatable $user, {{modelShort}} $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param Authenticatable $user
+     *
+     * @return bool
+     */
+    public function create(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     *
+     * @param Authenticatable $user
+     * @param {{modelShort}} $model
+     *
+     * @return bool
+     */
+    public function update(Authenticatable $user, {{modelShort}} $model): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param Authenticatable $user
+     * @param {{modelShort}} $model
+     *
+     * @return bool
+     */
+    public function delete(Authenticatable $user, {{modelShort}} $model): bool
+    {
+        return true;
+    }
+}

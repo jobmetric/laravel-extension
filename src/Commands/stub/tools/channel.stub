@@ -1,0 +1,19 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+
+class {{class}} implements ShouldBroadcast
+{
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return Channel
+     */
+    public function broadcastOn(): Channel
+    {
+        return new Channel('channel-name');
+    }
+}

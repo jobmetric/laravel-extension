@@ -1,0 +1,4 @@
+<div>
+    <h1>{{ $subject ?? 'Mail' }}</h1>
+    <p>{{ $slot ?? '' }}</p>
+</div>

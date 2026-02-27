@@ -1,0 +1,7 @@
+<?php
+
+namespace {{namespace}};
+
+test('example', function () {
+    expect(true)->toBeTrue();
+});
