@@ -339,6 +339,7 @@ class ExtensionMake extends Command
 
     /**
      * Get the content of a stub file and replace the placeholders with the given values.
+     * Stubs are loaded from stub/make directory.
      *
      * @param string $name
      * @param array<string, string> $replace
@@ -348,7 +349,7 @@ class ExtensionMake extends Command
      */
     private function getStub(string $name, array $replace): string
     {
-        $path = __DIR__ . DIRECTORY_SEPARATOR . 'stub' . DIRECTORY_SEPARATOR . $name;
+        $path = __DIR__ . DIRECTORY_SEPARATOR . 'stub' . DIRECTORY_SEPARATOR . 'make' . DIRECTORY_SEPARATOR . $name;
         if (! File::isFile($path)) {
             return '';
         }
@@ -382,12 +383,6 @@ class ExtensionMake extends Command
 
     /**
      * Write the main extension class file using the extension.php.stub template and the given replacement values.
-     * The generated class will be named {{name}} and will be placed in the {{extension}}/{{name}} directory.
-     *
-     * The stub will be processed to replace placeholders like {{extension}}, {{name}}, {{configurationChain}}, etc.
-     * with the corresponding values from the $replace array. The generated class will extend the appropriate base
-     * class based on the extension type and will include the configuration method with the specified configuration
-     * chain.
      *
      * @param string $path
      * @param string $name
@@ -404,11 +399,6 @@ class ExtensionMake extends Command
 
     /**
      * Write the extension.json file using the extension.json.stub template and the given replacement values.
-     * The generated JSON file will contain the metadata of the extension, such as its name, version, author, etc.
-     *
-     * The stub will be processed to replace placeholders like {{extension}}, {{name}}, {{date}}, etc. with the
-     * corresponding values from the $replace array. The generated JSON file will be used by the extension installer to
-     * register the extension in the system and display its information in the UI.
      *
      * @param string $path
      * @param array<string, string> $replace
