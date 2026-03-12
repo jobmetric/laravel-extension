@@ -2,10 +2,12 @@
 
 namespace JobMetric\Extension;
 
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use JobMetric\Extension\Contracts\AbstractExtension;
+use JobMetric\Extension\Events\ExtensionDeleteEvent;
 use JobMetric\Extension\Events\ExtensionInstallEvent;
 use JobMetric\Extension\Events\ExtensionUninstallEvent;
 use JobMetric\Extension\Events\PluginDeleteEvent;
@@ -15,364 +17,283 @@ use JobMetric\Extension\Exceptions\ExtensionConfigFileNotFoundException;
 use JobMetric\Extension\Exceptions\ExtensionConfigurationNotMatchException;
 use JobMetric\Extension\Exceptions\ExtensionDontHaveContractException;
 use JobMetric\Extension\Exceptions\ExtensionFolderNotFoundException;
+use JobMetric\Extension\Exceptions\ExtensionFromPackageNotDeletableException;
 use JobMetric\Extension\Exceptions\ExtensionHaveSomePluginException;
-use JobMetric\Extension\Exceptions\ExtensionNotDeletableException;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Exceptions\ExtensionNotUninstalledException;
 use JobMetric\Extension\Exceptions\ExtensionRunnerNotFoundException;
 use JobMetric\Extension\Facades\ExtensionRegistry;
 use JobMetric\Extension\Facades\ExtensionTypeRegistry;
+use JobMetric\Extension\Facades\InstalledExtensionsFile;
 use JobMetric\Extension\Http\Resources\ExtensionResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
+use JobMetric\PackageCore\Output\Response;
+use JobMetric\PackageCore\Services\AbstractCrudService;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
-class Extension
+/**
+ * Class Extension
+ *
+ * CRUD and lifecycle service for Extension entities.
+ * Responsibilities:
+ * - List extensions by type (installed, needs_update, details, plugins_count)
+ * - Install / uninstall (run migrations, default plugin when not multiple, then store/destroy)
+ * - Delete extension files from disk when uninstalled and under App\Extensions
+ * - Upgrade to latest version from remote (placeholder)
+ * - installZip, download, upload (placeholders)
+ */
+class Extension extends AbstractCrudService
 {
     /**
-     * Get the specified extension.
+     * Human-readable entity name key used in response messages.
      *
-     * @param string $extension
-     * @param array $filter
-     * @param array $with
-     *
-     * @return QueryBuilder
+     * @var string
      */
-    private function query(string $extension, array $filter = [], array $with = []): QueryBuilder
-    {
-        $fields = ['id', 'extension', 'name', 'info', 'created_at', 'updated_at'];
-
-        $query = QueryBuilder::for(ExtensionModel::class)
-            ->select($fields)
-            ->selectSub(function ($query) {
-                $query->from(config('extension.tables.plugin'))
-                    ->selectRaw('count(*)')
-                    ->whereColumn('extension_id', 'extensions.id');
-            }, 'plugins_count')
-            ->allowedFields($fields)
-            ->allowedSorts($fields)
-            ->allowedFilters($fields)
-            ->defaultSort([
-                'extension',
-                'name'
-            ])
-            ->where($filter);
-
-        $query->where('extension', $extension);
-
-        $query->with('plugins');
-
-        if (!empty($with)) {
-            $query->with($with);
-        }
-
-        return $query;
-    }
+    protected string $entityName = 'extension::base.entity_names.extension';
 
     /**
-     * Get all extensions.
+     * Bound model/resource classes for the base CRUD.
      *
-     * @param string $type
-     * @param array $filter
-     * @param array $with
-     *
-     * @return AnonymousResourceCollection
+     * @var class-string
      */
-    public function all(string $type, array $filter = [], array $with = []): AnonymousResourceCollection
-    {
-        $database_extensions = $this->query(Str::studly($type), $filter, $with)->get();
+    protected static string $modelClass = ExtensionModel::class;
+    protected static string $resourceClass = ExtensionResource::class;
 
-        $extensions = $this->getExtensionWithType($type);
-        foreach ($extensions as $i => $extension) {
-            foreach ($database_extensions as $j => $database_extension) {
-                if ($extension['extension'] === $database_extension->extension && $extension['name'] === $database_extension->info['name']) {
-                    $extensions[$i]['data'] = $database_extension;
-                    $extensions[$i]['installed'] = true;
-                    unset($database_extensions[$j]);
+    /**
+     * Allowed fields for selection/filter/sort in QueryBuilder.
+     *
+     * @var string[]
+     */
+    protected static array $fields = [
+        'id',
+        'extension',
+        'name',
+        'namespace',
+        'info',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected static array $defaultSort = [
+        'extension',
+        'name',
+    ];
+
+    protected static ?string $storeEventClass = ExtensionInstallEvent::class;
+    protected static ?string $deleteEventClass = ExtensionUninstallEvent::class;
+
+    /**
+     * Methods not exposed via __call; use install() / uninstall() instead of store / destroy for lifecycle.
+     *
+     * @var string[]
+     */
+    protected array $excepts = [
+        'store',
+        'destroy',
+    ];
+
+    /**
+     * List extensions for a type. Merges discovered specs with DB rows.
+     * Each item: installed (bool), needs_update (bool when installed), details, plugins_count (when installed).
+     *
+     * @param array<string, mixed> $filters
+     * @param array<int, string> $with
+     * @param string|null $mode
+     *
+     * @return Response
+     */
+    public function doAll(array $filters = [], array $with = [], ?string $mode = null): Response
+    {
+        $extension = $filters['extension'] ?? null;
+
+        if ($extension === null || $extension === '') {
+            return parent::all($filters, $with, $mode);
+        }
+
+        $formatType = Str::studly((string) $extension);
+        if (! ExtensionTypeRegistry::has($formatType)) {
+            return Response::make(true, null, ExtensionResource::collection([]));
+        }
+
+        $databaseExtensions = $this->query($filters, $with, $mode)->get();
+        $specs = $this->getExtensionWithType($formatType);
+
+        foreach ($specs as $i => $spec) {
+            $specs[$i]['installed'] = false;
+            $specs[$i]['needs_update'] = false;
+
+            foreach ($databaseExtensions as $j => $row) {
+                $match = ($spec['extension'] ?? '') === $row->extension && ($spec['name'] ?? '') === ($row->name ?? ($row->info['name'] ?? ''));
+                if ($match) {
+                    $specs[$i]['data'] = $row;
+                    $specs[$i]['installed'] = true;
+                    $specs[$i]['needs_update'] = ! $this->isUpdated((string) $spec['extension'], (string) $spec['name']);
+                    $databaseExtensions->forget($j);
                     break;
                 }
             }
         }
 
-        return ExtensionResource::collection($extensions);
+        return Response::make(true, null, ExtensionResource::collection($specs));
     }
 
     /**
-     * Get extension info.
+     * Install extension: validate, run migrations, store record and default plugin (when not multiple).
      *
-     * @param string $extension
-     * @param string $name
-     * @param bool $has_resource
+     * @param string $namespace FQCN of the extension class.
      *
-     * @return ExtensionModel|ExtensionResource
+     * @return Response
      * @throws Throwable
      */
-    public function getInfo(string $extension, string $name, bool $has_resource = false): ExtensionModel|ExtensionResource
+    public function install(string $namespace): Response
     {
-        $extension_model = ExtensionModel::ExtensionName($extension, $name)->first();
+        $parsed = $this->parseNamespaceAndValidatePath($namespace);
+        $folder = $parsed['folder'];
+        $extension = $parsed['extension'];
+        $name = $parsed['name'];
 
-        if (!$extension_model) {
-            throw new ExtensionNotInstalledException($extension, $name);
-        }
-
-        if ($has_resource) {
-            return ExtensionResource::make($extension_model);
-        }
-
-        return $extension_model;
-    }
-
-    /**
-     * Extension installer
-     *
-     * @param string $namespace
-     *
-     * @return array
-     * @throws Throwable
-     */
-    public function install(string $namespace): array
-    {
-        $namespace_path = resolveNamespacePath($namespace);
-        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
-
-        $name = array_pop($namespace_parts);
-        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
-        array_pop($namespace_parts);
-        $extension = array_pop($namespace_parts);
-
-        if (!is_dir($folder)) {
-            throw new ExtensionFolderNotFoundException($name);
-        }
-
-        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
-            throw new ExtensionConfigFileNotFoundException($name);
-        }
-
-        if (ExtensionModel::ExtensionNamespace($namespace)->exists()) {
+        if (ExtensionModel::extensionNamespace($namespace)->exists()) {
             throw new ExtensionAlreadyInstalledException($name);
         }
 
-        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
+        $info = $this->loadExtensionInfo($folder, $name);
 
-        if (!isset($extension_information['extension']) ||
-            !isset($extension_information['name']) ||
-            !isset($extension_information['version']) ||
-            !isset($extension_information['title'])) {
-            throw new ExtensionConfigurationNotMatchException($name);
-        }
-
-        if (!file_exists($folder . DIRECTORY_SEPARATOR . "$name.php")) {
+        if (! is_file($folder . DIRECTORY_SEPARATOR . $name . '.php')) {
             throw new ExtensionRunnerNotFoundException($name);
         }
 
-        // check class name
-        if (!class_exists($namespace)) {
+        if (! class_exists($namespace)) {
             throw new ExtensionClassNameNotMatchException($name);
         }
 
-        if (!is_subclass_of($namespace, \JobMetric\Extension\Contracts\AbstractExtension::class)) {
+        if (! is_subclass_of($namespace, Contracts\AbstractExtension::class)) {
             throw new ExtensionDontHaveContractException($name);
         }
 
-        // run install method
-        if (method_exists($namespace, 'install')) {
-            $namespace::install();
+        $instance = app($namespace);
+        if (method_exists($instance, 'install')) {
+            $instance->install();
         }
 
-        // create a new extension
-        $extension_model = new ExtensionModel;
-
-        $extension_model->extension = $extension;
-        $extension_model->name = $name;
-        $extension_model->namespace = $namespace;
-        $extension_model->info = $extension_information;
-
-        $extension_model->save();
-
-        if (!isset($extension_information['multiple']) || !$extension_information['multiple']) {
-            $fields = [];
-            foreach ($extension_information['fields'] ?? [] as $field) {
-                $field_name = $field['name'] ?? null;
-
-                if ($field_name) {
-                    $fields[$field_name] = $field['default'] ?? null;
-                }
-            }
-
-            $extension_model->plugins()->create([
-                'name' => $extension_information['title'],
-                'fields' => $fields,
-                'status' => true,
-            ]);
-        }
-
-        event(new ExtensionInstallEvent($extension_model));
-
-        return [
-            'ok' => true,
-            'message' => trans('extension::base.messages.extension.installed', [
-                'name' => trans($extension_information['title'])
-            ]),
-            'status' => 200
+        $data = [
+            'namespace' => $namespace,
+            'extension' => $extension,
+            'name'      => $name,
+            'info'      => $info,
         ];
+
+        $this->store($data, ['plugins']);
+
+        InstalledExtensionsFile::syncFromDatabase(app());
+
+        $message = trans('extension::base.messages.extension.installed', [
+            'name' => trans($info['title'] ?? $name),
+        ]);
+
+        return Response::make(true, $message, $data);
     }
 
     /**
-     * Extension uninstaller
+     * Uninstall extension: rollback migrations, delete plugins, destroy extension record.
      *
-     * @param string $namespace
-     * @param bool $force_delete_plugin
+     * @param string $namespace         FQCN of the extension class.
+     * @param bool $force_delete_plugin When true, remove plugins even if extension allows multiple.
      *
-     * @return array
+     * @return Response
      * @throws Throwable
      */
-    public function uninstall(string $namespace, bool $force_delete_plugin = false): array
+    public function uninstall(string $namespace, bool $force_delete_plugin = false): Response
     {
-        $namespace_path = resolveNamespacePath($namespace);
-        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
+        $parsed = $this->parseNamespaceAndValidatePath($namespace);
+        $info = $this->loadExtensionInfo($parsed['folder'], $parsed['name']);
+        $multiple = (bool) ($info['multiple'] ?? false);
 
-        $name = array_pop($namespace_parts);
-        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
-        array_pop($namespace_parts);
-
-        if (!is_dir($folder)) {
-            throw new ExtensionFolderNotFoundException($name);
+        $model = ExtensionModel::extensionNamespace($namespace)->with('plugins')->first();
+        if ($model === null) {
+            throw new ExtensionNotInstalledException($parsed['name']);
         }
 
-        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
-            throw new ExtensionConfigFileNotFoundException($name);
+        if ($multiple && ! $force_delete_plugin && $model->plugins->count() > 0) {
+            throw new ExtensionHaveSomePluginException($parsed['name']);
         }
 
-        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
-
-        $multiple = $extension_information['multiple'] ?? false;
-
-        $extension_model = ExtensionModel::ExtensionNamespace($namespace)->with('plugins')->first();
-
-        if (!$extension_model) {
-            throw new ExtensionNotInstalledException($name);
-        }
-
-        if ($multiple && !$force_delete_plugin && $extension_model->plugins->count() > 0) {
-            throw new ExtensionHaveSomePluginException($name);
-        }
-
-        DB::transaction(function () use ($namespace, $extension_model) {
-            if (method_exists($namespace, 'uninstall')) {
-                $namespace::uninstall();
+        return DB::transaction(function () use ($namespace, $model, $info, $parsed) {
+            $instance = app($namespace);
+            if (method_exists($instance, 'uninstall')) {
+                $instance->uninstall();
             }
 
-            $extension_model->plugins()->get()->each(function ($plugin) {
+            $model->plugins->each(function ($plugin) {
                 event(new PluginDeleteEvent($plugin));
-
                 $plugin->delete();
             });
 
-            $extension_model->delete();
+            $this->destroy($model->id);
 
-            event(new ExtensionUninstallEvent($extension_model));
+            InstalledExtensionsFile::syncFromDatabase(app());
+
+            $message = trans('extension::base.messages.extension.uninstalled', [
+                'name' => trans($info['title'] ?? $model->name),
+            ]);
+
+            $data = [
+                'namespace' => $namespace,
+                'extension' => $parsed['extension'],
+                'name'      => $parsed['name'],
+                'info'      => $info,
+            ];
+
+            return Response::make(true, $message, $data);
         });
-
-        return [
-            'ok' => true,
-            'message' => trans('extension::base.messages.extension.uninstalled', [
-                'name' => trans($extension_information['title'])
-            ]),
-            'status' => 200
-        ];
     }
 
     /**
-     * Extension delete
+     * Delete extension files from disk. Allowed only when already uninstalled and under App\Extensions.
      *
      * @param string $type
      * @param string $namespace
      *
-     * @return array
-     * @throws Throwable
+     * @return Response
+     * @throws ExtensionConfigFileNotFoundException
+     * @throws ExtensionConfigurationNotMatchException
+     * @throws ExtensionFolderNotFoundException
+     * @throws ExtensionFromPackageNotDeletableException
+     * @throws ExtensionNotUninstalledException
      */
-    public function delete(string $type, string $namespace): array
+    public function delete(string $type, string $namespace): Response
     {
-        $namespace_path = resolveNamespacePath($namespace);
-        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace_path);
+        $parsed = $this->parseNamespaceAndValidatePath($namespace);
+        $info = $this->loadExtensionInfo($parsed['folder'], $parsed['name']);
 
-        $name = array_pop($namespace_parts);
-        $folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
-        array_pop($namespace_parts);
-
-        if (!is_dir($folder)) {
-            throw new ExtensionFolderNotFoundException($name);
+        if (! str_starts_with($namespace, self::getAppExtensionsPrefix())) {
+            throw new ExtensionFromPackageNotDeletableException($parsed['name']);
         }
 
-        if (!file_exists($folder . DIRECTORY_SEPARATOR . "extension.json")) {
-            throw new ExtensionConfigFileNotFoundException($name);
+        if (ExtensionModel::extensionNamespace($namespace)->exists()) {
+            throw new ExtensionNotUninstalledException($parsed['name']);
         }
 
-        $extension_information = json_decode(file_get_contents($folder . DIRECTORY_SEPARATOR . "extension.json"), true);
+        File::deleteDirectory($parsed['folder']);
 
-        $extension_model = ExtensionModel::ExtensionNamespace($namespace)->first();
+        event(new ExtensionDeleteEvent(Str::studly($type), $namespace, $parsed['name']));
 
-        if ($extension_model) {
-            throw new ExtensionNotUninstalledException($name);
-        }
+        $message = trans('extension::base.messages.extension.deleted', [
+            'name' => trans($info['title'] ?? $parsed['name']),
+        ]);
 
-        $namespace_parts = explode(DIRECTORY_SEPARATOR, $namespace);
-        array_pop($namespace_parts);
-        array_pop($namespace_parts);
-        array_pop($namespace_parts);
-        $namespace_folder = implode(DIRECTORY_SEPARATOR, $namespace_parts);
-
-        $formatType = Str::studly($type);
-        $deletable = (bool) ExtensionTypeRegistry::getOption($formatType, 'deletable', false);
-
-        if ($deletable) {
-            File::deleteDirectory($folder);
-        } else {
-            throw new ExtensionNotDeletableException($name);
-        }
-
-        return [
-            'ok' => true,
-            'message' => trans('extension::base.messages.extension.deleted', [
-                'name' => trans($extension_information['title'])
-            ]),
-            'status' => 200
+        $data = [
+            'namespace' => $namespace,
+            'extension' => $parsed['extension'],
+            'name'      => $parsed['name'],
+            'info'      => $info,
         ];
+
+        return Response::make(true, $message, $data);
     }
 
     /**
-     * Extension updater
-     *
-     * @param string $extension
-     * @param string $name
-     *
-     * @return array
-     */
-    public function update(string $extension, string $name): array
-    {
-        // check the version in extension.json local and remote repository
-        // if the local version is lower than the remote version then run $this->download($path)
-        return [];
-    }
-
-    /**
-     * Check extension is updated from remote repository
-     *
-     * @param string $extension
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function isUpdated(string $extension, string $name): bool
-    {
-        // check the version in extension.json local and remote repository
-        // if the local version is lower than the remote version then return false
-        // else return true
-        return true;
-    }
-
-    /**
-     * Extension installer with zip
+     * Install from zip path.
      *
      * @param string $path
      * @param bool $delete_file
@@ -381,29 +302,21 @@ class Extension
      */
     public function installZip(string $path, bool $delete_file = false): void
     {
-        // unzip file
-        // read file extension.json for get extension and name
-        // create folder in app/Extensions/{extension}/{name}
-        // copy all files to app/Extensions/{extension}/{name}
-        // run $this->install($extension, $name)
-        // delete zip file if $delete_file is true
     }
 
     /**
-     * Extension downloader
+     * Download from URL and install.
      *
-     * @param string $path
+     * @param string $url
      *
      * @return void
      */
-    public function download(string $path): void
+    public function download(string $url): void
     {
-        // download file
-        // run $this->installZip($path, true)
     }
 
     /**
-     * Extension uploader
+     * Upload zip and install.
      *
      * @param string $path
      *
@@ -411,35 +324,273 @@ class Extension
      */
     public function upload(string $path): void
     {
-        // upload file
-        // run $this->installZip($path, true)
     }
 
     /**
-     * Get extension with type
+     * Upgrade extension to latest version from remote/server.
+     *
+     * @param string $extension
+     * @param string $name
+     *
+     * @return Response
+     */
+    public function upgrade(string $extension, string $name): Response
+    {
+        return Response::make(true, trans('extension::base.messages.extension.upgraded', ['name' => $name]), null);
+    }
+
+    /**
+     * Whether extension is considered up to date.
+     *
+     * @param string $extension
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isUpdated(string $extension, string $name): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get extension record by type and name; optionally as resource.
+     *
+     * @param string $extension
+     * @param string $name
+     * @param bool $has_resource
+     *
+     * @return ExtensionModel|ExtensionResource
+     * @throws ExtensionNotInstalledException
+     */
+    public function getInfo(
+        string $extension,
+        string $name,
+        bool $has_resource = false
+    ): ExtensionModel|ExtensionResource {
+        $model = ExtensionModel::extensionName($extension, $name)->withCount('plugins')->first();
+
+        if ($model === null) {
+            throw new ExtensionNotInstalledException($name);
+        }
+
+        return $has_resource ? ExtensionResource::make($model) : $model;
+    }
+
+    /**
+     * Build FQCN for an extension from type and name.
+     *
+     * @param string $extension
+     * @param string $name
+     *
+     * @return string
+     */
+    public static function namespaceFor(string $extension, string $name): string
+    {
+        return self::getAppExtensionsPrefix() . Str::studly($extension) . '\\' . Str::studly($name);
+    }
+
+    /**
+     * Discovered extension specs for a type (from registry), with deletable flag.
      *
      * @param string $type
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      */
     public function getExtensionWithType(string $type): array
     {
         $formatType = Str::studly($type);
-        $deletable = (bool) ExtensionTypeRegistry::getOption($formatType, 'deletable', false);
+        $appPrefix = self::getAppExtensionsPrefix();
         $namespaces = ExtensionRegistry::byType($formatType);
-        $extensions = [];
+        $out = [];
 
         foreach ($namespaces as $namespace) {
             $spec = ExtensionRegistry::resolveSpec($namespace);
             if ($spec === null) {
                 continue;
             }
-            $extensions[] = array_merge($spec, [
+
+            $out[] = array_merge($spec, [
                 'namespace' => $namespace,
-                'deletable' => $deletable,
+                'deletable' => str_starts_with($namespace, $appPrefix),
             ]);
         }
 
-        return $extensions;
+        return $out;
+    }
+
+    /**
+     * Add plugins_count subSelect and scope by extension when filter has 'extension'.
+     *
+     * @param QueryBuilder $query
+     * @param array<string, mixed> $filters
+     * @param array<int, string> $with
+     * @param string|null $mode
+     *
+     * @return void
+     */
+    protected function afterQuery(
+        QueryBuilder &$query,
+        array $filters = [],
+        array $with = [],
+        ?string $mode = null
+    ): void {
+        $table = $this->model->getTable();
+
+        $query->selectSub(function ($q) use ($table) {
+            $q->from(config('extension.tables.plugin'))
+                ->selectRaw('count(*)')
+                ->whereColumn('extension_id', $table . '.id');
+        }, 'plugins_count');
+
+        if (isset($filters['extension']) && $filters['extension'] !== '') {
+            $query->where($table . '.extension', Str::studly((string) $filters['extension']));
+        }
+    }
+
+    /**
+     * Ensure data has extension, name, namespace, info for fill; no validation (install() prepares data).
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return void
+     */
+    protected function changeFieldStore(array &$data): void
+    {
+        $data = array_intersect_key($data, array_flip([
+            'extension',
+            'name',
+            'namespace',
+            'info',
+        ]));
+    }
+
+    /**
+     * Create default plugin after extension record is stored when extension is not multiple.
+     * Form field keys and default values are read from the extension's form() (FormBuilder), not from extension.json.
+     *
+     * @param Model $model
+     * @param array<string, mixed> $data
+     *
+     * @return void
+     */
+    protected function afterStore(Model $model, array &$data): void
+    {
+        /** @var ExtensionModel $model */
+        $info = $model->info ?? [];
+        $multiple = (bool) ($info['multiple'] ?? false);
+
+        if ($multiple) {
+            return;
+        }
+
+        $namespace = $model->namespace;
+        if (! is_string($namespace) || ! class_exists($namespace) || ! is_subclass_of($namespace, AbstractExtension::class)) {
+            $model->plugins()->create([
+                'name'   => $info['title'] ?? $model->name,
+                'fields' => [],
+                'status' => true,
+            ]);
+
+            return;
+        }
+
+        $instance = app($namespace);
+        $fields = $this->getDefaultFieldsFromExtensionForm($instance);
+
+        $model->plugins()->create([
+            'name'   => $info['title'] ?? $model->name,
+            'fields' => $fields,
+            'status' => true,
+        ]);
+    }
+
+    /**
+     * Extract default field values from the extension's form definition (FormBuilder).
+     * Keys are taken from each CustomField's params['name'], values from params['value'] or attributes['value'].
+     *
+     * @param AbstractExtension $instance
+     *
+     * @return array<string, mixed>
+     */
+    protected function getDefaultFieldsFromExtensionForm(AbstractExtension $instance): array
+    {
+        $fields = [];
+        $form = $instance->form()->build();
+
+        foreach ($form->getAllCustomFields(true) as $customField) {
+            $name = $customField->params['name'] ?? null;
+            if ($name === null || $name === '') {
+                continue;
+            }
+
+            $value = $customField->params['value'] ?? ($customField->attributes['value'] ?? null);
+            $fields[$name] = $value;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Parse path into extension type, name, folder; ensure folder and extension.json exist.
+     *
+     * @param string $namespace
+     *
+     * @return array{extension: string, name: string, folder: string}
+     * @throws ExtensionConfigFileNotFoundException
+     * @throws ExtensionFolderNotFoundException
+     */
+    private function parseNamespaceAndValidatePath(string $namespace): array
+    {
+        $path = resolveNamespacePath($namespace);
+        $parts = explode(DIRECTORY_SEPARATOR, $path);
+        $name = array_pop($parts);
+        $folder = implode(DIRECTORY_SEPARATOR, $parts);
+        array_pop($parts);
+        $extension = array_pop($parts);
+
+        if (! is_dir($folder)) {
+            throw new ExtensionFolderNotFoundException($name);
+        }
+
+        if (! is_file($folder . DIRECTORY_SEPARATOR . 'extension.json')) {
+            throw new ExtensionConfigFileNotFoundException($name);
+        }
+
+        return [
+            'extension' => $extension,
+            'name'      => $name,
+            'folder'    => $folder,
+        ];
+    }
+
+    /**
+     * Load and decode extension.json; require extension, name, version, title.
+     *
+     * @param string $folder
+     * @param string $name
+     *
+     * @return array<string, mixed>
+     * @throws ExtensionConfigurationNotMatchException
+     */
+    private function loadExtensionInfo(string $folder, string $name): array
+    {
+        $raw = @file_get_contents($folder . DIRECTORY_SEPARATOR . 'extension.json');
+        $info = is_string($raw) ? json_decode($raw, true) : null;
+        $info = is_array($info) ? $info : [];
+
+        foreach (['extension', 'name', 'version', 'title'] as $key) {
+            if (! isset($info[$key])) {
+                throw new ExtensionConfigurationNotMatchException($name);
+            }
+        }
+
+        return $info;
+    }
+
+    private static function getAppExtensionsPrefix(): string
+    {
+        $root = function_exists('appNamespace') ? trim(appNamespace(), '\\') : 'App';
+
+        return $root . '\\Extensions\\';
     }
 }
