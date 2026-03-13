@@ -113,7 +113,7 @@ class Extension extends AbstractCrudService
 
         $formatType = Str::studly((string) $extension);
         if (! ExtensionTypeRegistry::has($formatType)) {
-            return Response::make(true, null, ExtensionResource::collection([]));
+            return Response::make(true, '', ExtensionResource::collection([]));
         }
 
         $databaseExtensions = $this->query($filters, $with, $mode)->get();
@@ -135,7 +135,7 @@ class Extension extends AbstractCrudService
             }
         }
 
-        return Response::make(true, null, ExtensionResource::collection($specs));
+        return Response::make(true, '', ExtensionResource::collection($specs));
     }
 
     /**
