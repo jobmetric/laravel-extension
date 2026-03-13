@@ -12,6 +12,10 @@ return [
     |
     */
 
+    'entity_names' => [
+        'extension' => 'Extension',
+    ],
+
     "validation" => [
         "namespace_not_found" => "The :namespace file not found.",
     ],
@@ -21,6 +25,7 @@ return [
         "extension_not_installed" => "The :name extension is not installed.",
         "extension_not_uninstalled" => "The :name extension is not uninstalled.",
         "extension_not_deletable" => "The :name extension is not deletable.",
+        "extension_from_package_not_deletable" => "The :name extension is provided by a package and cannot be deleted from here.",
         "extension_folder_not_found" => "The :name extension folder not found.",
         "extension_runner_not_found" => "The :name extension runner not found.",
         "extension_config_file_not_found" => "The :name extension config file not found.",
@@ -39,6 +44,7 @@ return [
             "installed" => "The :name extension has been installed.",
             "uninstalled" => "The :name extension has been uninstalled.",
             "deleted" => "The :name extension has been deleted.",
+            "upgraded" => "The :name extension has been upgraded.",
         ],
 
         "plugin" => [

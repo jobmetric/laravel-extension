@@ -12,6 +12,10 @@ return [
     |
     */
 
+    'entity_names' => [
+        'extension' => 'افزونه',
+    ],
+
     "validation" => [
         "namespace_not_found" => "آدرس فایل :namespace یافت نشد.",
     ],
@@ -21,6 +25,7 @@ return [
         "extension_not_installed" => "افزونه :name نصب نشده است.",
         "extension_not_uninstalled" => "افزونه :name حذف نصب نشده است.",
         "extension_not_deletable" => "افزونه :name قابل حذف نیست.",
+        "extension_from_package_not_deletable" => "افزونه :name از طریق پکیج ارائه شده و از اینجا قابل حذف نیست.",
         "extension_folder_not_found" => "پوشه افزونه :name یافت نشد.",
         "extension_runner_not_found" => "Runner افزونه :name یافت نشد.",
         "extension_config_file_not_found" => "فایل پیکربندی افزونه :name یافت نشد.",
@@ -39,6 +44,7 @@ return [
             "installed" => "افزونه :name نصب شده است.",
             "uninstalled" => "افزونه :name حذف نصب شده است.",
             "deleted" => "افزونه :name حذف شده است.",
+            "upgraded" => "افزونه :name ارتقا داده شده است.",
         ],
 
         "plugin" => [
