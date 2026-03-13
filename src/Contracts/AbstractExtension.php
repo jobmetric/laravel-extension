@@ -257,7 +257,7 @@ abstract class AbstractExtension
      *
      * @return void
      */
-    protected function uninstall(): void
+    public function uninstall(): void
     {
         $migrationsPath = $this->getMigrationsPath();
         $rows = $this->migrationQuery()->orderByDesc('id')->get();
