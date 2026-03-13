@@ -1,0 +1,500 @@
+<?php
+
+namespace JobMetric\Extension\Services;
+
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use JobMetric\Extension\Events\Plugin\PluginAddEvent;
+use JobMetric\Extension\Events\Plugin\PluginDeleteEvent;
+use JobMetric\Extension\Events\Plugin\PluginEditEvent;
+use JobMetric\Extension\Events\Plugin\PluginStoreEvent;
+use JobMetric\Extension\Events\Plugin\PluginUpdateEvent;
+use JobMetric\Extension\Exceptions\ExtensionNotFoundException;
+use JobMetric\Extension\Exceptions\PluginNotFoundException;
+use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
+use JobMetric\Extension\Exceptions\PluginNotMultipleException;
+use JobMetric\Extension\Facades\Extension as ExtensionFacade;
+use JobMetric\CustomField\CustomField;
+use JobMetric\Extension\Contracts\AbstractExtension;
+use JobMetric\Extension\Http\Requests\StorePluginRequest;
+use JobMetric\Extension\Http\Requests\UpdatePluginRequest;
+use JobMetric\Extension\Http\Resources\PluginResource;
+use JobMetric\Extension\Models\Extension as ExtensionModel;
+use JobMetric\Extension\Models\Plugin as PluginModel;
+use Spatie\QueryBuilder\QueryBuilder;
+use Throwable;
+
+class Plugin
+{
+    /**
+     * Get the specified plugin.
+     *
+     * @param array $filter
+     * @param array $with
+     *
+     * @return QueryBuilder
+     */
+    public function query(array $filter = [], array $with = []): QueryBuilder
+    {
+        $fields = [
+            'id',
+            'extension_id',
+            'name',
+            'fields',
+            'status',
+            'extension_type',
+            'extension_name',
+            'extension_namespace',
+            'extension_info',
+            'created_at',
+            'updated_at'
+        ];
+
+        $extension_table = config('extension.tables.extension');
+        $plugin_table = config('extension.tables.plugin');
+
+        $query = PluginModel::query()->select([
+            $plugin_table . '.*',
+            'e.extension AS extension_type',
+            'e.name as extension_name',
+            'e.namespace as extension_namespace',
+            'e.info as extension_info',
+        ]);
+
+        // Join the extension table for select plugin
+        $query->leftJoin($extension_table . ' as e', function ($join) use ($plugin_table) {
+            $join->on('e.id', '=', $plugin_table . '.extension_id');
+        });
+
+        $query = QueryBuilder::for(PluginModel::class)
+            ->fromSub($query, $plugin_table)
+            ->allowedFields($fields)
+            ->allowedSorts($fields)
+            ->allowedFilters($fields)
+            ->defaultSort([
+                'name'
+            ])
+            ->where($filter);
+
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Paginate the specified plugin.
+     *
+     * @param array $filter
+     * @param int $page_limit
+     * @param array $with
+     *
+     * @return LengthAwarePaginator
+     */
+    public function paginate(array $filter = [], int $page_limit = 15, array $with = []): LengthAwarePaginator
+    {
+        return $this->query($filter, $with)->paginate($page_limit);
+    }
+
+    /**
+     * Get all plugins.
+     *
+     * @param array $filter
+     * @param array $with
+     *
+     * @return AnonymousResourceCollection
+     */
+    public function all(array $filter = [], array $with = []): AnonymousResourceCollection
+    {
+        return PluginResource::collection(
+            $this->query($filter, $with)->get()
+        );
+    }
+
+    /**
+     * Store a newly created plugin in storage.
+     *
+     * @param int $extension_id
+     * @param array $data
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function store(int $extension_id, array $data): array
+    {
+        /**
+         * @var ExtensionModel $extension
+         */
+        $extension = ExtensionModel::find($extension_id);
+
+        if (!$extension) {
+            throw new ExtensionNotFoundException;
+        }
+
+        $validator = Validator::make($data, (new StorePluginRequest)->setExtensionId($extension_id)->rules());
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+        }
+
+        return DB::transaction(function () use ($extension_id, $data) {
+            $plugin = new PluginModel;
+
+            $plugin->extension_id = $extension_id;
+            $plugin->name = $data['name'];
+            $plugin->fields = $data['fields'] ?? [];
+            $plugin->status = $data['status'];
+
+            $plugin->save();
+
+            event(new PluginStoreEvent($plugin));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.stored'),
+                'data' => PluginResource::make($plugin),
+                'status' => 201
+            ];
+        });
+    }
+
+    /**
+     * Update the specified extension plugin.
+     *
+     * @param int $extension_id
+     * @param int $plugin_id
+     * @param array $data
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function update(int $extension_id, int $plugin_id, array $data): array
+    {
+        /**
+         * @var ExtensionModel $extension
+         */
+        $extension = ExtensionModel::find($extension_id);
+
+        if (!$extension) {
+            throw new ExtensionNotFoundException;
+        }
+
+        /**
+         * @var PluginModel $plugin
+         */
+        $plugin = PluginModel::find($plugin_id);
+
+        if (!$plugin) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+
+        if ($plugin->extension_id !== $extension_id) {
+            throw new PluginNotMatchExtensionException($extension_id, $plugin_id);
+        }
+
+        $validator = Validator::make($data, (new UpdatePluginRequest)->setExtensionId($extension_id)->setPlugin($plugin)->rules());
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+        }
+
+        return DB::transaction(function () use ($plugin, $data) {
+            if (array_key_exists('name', $data)) {
+                $plugin->name = $data['name'];
+            }
+
+            if (array_key_exists('status', $data)) {
+                $plugin->status = $data['status'];
+            }
+
+            if (array_key_exists('fields', $data)) {
+                $plugin->fields = $data['fields'];
+            }
+
+            $plugin->save();
+
+            event(new PluginUpdateEvent($plugin));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.updated'),
+                'data' => PluginResource::make($plugin),
+                'status' => 200
+            ];
+        });
+    }
+
+    /**
+     * Get plugin info.
+     *
+     * @param int $plugin_id
+     * @param bool $has_resource
+     *
+     * @return PluginModel|PluginResource
+     * @throws Throwable
+     */
+    public function getInfo(int $plugin_id, bool $has_resource = false): PluginModel|PluginResource
+    {
+        /**
+         * @var PluginModel $plugin_model
+         */
+        $plugin_model = PluginModel::with('extension')->find($plugin_id);
+
+        if (!$plugin_model) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+
+        if ($has_resource) {
+            return PluginResource::make($plugin_model);
+        }
+
+        return $plugin_model;
+    }
+
+    /**
+     * Get fields for plugin form (add/edit). Built from extension's form() (FormBuilder).
+     *
+     * @param string $extension
+     * @param string $name
+     * @param int|null $plugin_id
+     *
+     * @return array<int, array<string, mixed>>
+     * @throws Throwable
+     */
+    public function fields(string $extension, string $name, int $plugin_id = null): array
+    {
+        $extension_model = ExtensionFacade::getInfo($extension, $name);
+        $driver = app()->make($extension_model->namespace);
+
+        if (!$driver instanceof AbstractExtension) {
+            return [];
+        }
+
+        $plugin_info = null;
+        if ($plugin_id) {
+            $plugin_info = $this->getInfo($plugin_id);
+        }
+
+        $customFields = $driver->form()->getAllCustomFields(true);
+        $list = [];
+
+        $list[] = [
+            'extension' => $extension,
+            'extension_name' => $name,
+            'name' => 'name',
+            'type' => 'text',
+            'required' => true,
+            'default' => null,
+            'label' => trans('extension::base.form.plugin.fields.name.title'),
+            'info' => null,
+            'value' => $plugin_info?->name,
+        ];
+
+        $list[] = [
+            'extension' => $extension,
+            'extension_name' => $name,
+            'name' => 'status',
+            'type' => 'boolean',
+            'required' => true,
+            'default' => true,
+            'label' => trans('package-core::base.components.boolean_status.label'),
+            'info' => null,
+            'value' => $plugin_info?->status,
+        ];
+
+        foreach ($customFields as $customField) {
+            if (!$customField instanceof CustomField) {
+                continue;
+            }
+            $fieldName = $customField->params['name'] ?? null;
+            if ($fieldName === null || $fieldName === '') {
+                continue;
+            }
+            $list[] = [
+                'extension' => $extension,
+                'extension_name' => $name,
+                'name' => $fieldName,
+                'type' => $customField->type ?? 'text',
+                'required' => (bool) ($customField->params['required'] ?? false),
+                'default' => $customField->params['value'] ?? null,
+                'label' => $customField->label ?? $fieldName,
+                'info' => $customField->info ?? null,
+                'value' => $plugin_info && isset($plugin_info->fields[$fieldName]) ? $plugin_info->fields[$fieldName] : ($customField->params['value'] ?? null),
+            ];
+        }
+
+        return $list;
+    }
+
+    /**
+     * Add plugin
+     *
+     * @param string $extension
+     * @param string $name
+     * @param array $fields
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function add(string $extension, string $name, array $fields): array
+    {
+        $extension_model = ExtensionFacade::getInfo($extension, $name);
+
+        if (!$extension_model->info['multiple']) {
+            $plugin_model = PluginModel::query()->where('extension_id', $extension_model->id)->first();
+            if ($plugin_model) {
+                throw new PluginNotMultipleException($extension, $name);
+            }
+        }
+
+        $validator = Validator::make($fields, (new StorePluginRequest)->setExtensionId($extension_model->id)->rules());
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+
+            $plugin_model = new PluginModel;
+
+            $plugin_model->extension_id = $extension_model->id;
+            $plugin_model->name = $data['name'];
+            $plugin_model->fields = $data['fields'] ?? [];
+            $plugin_model->status = $data['status'];
+
+            $plugin_model->save();
+
+            event(new PluginAddEvent($plugin_model));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.added'),
+                'data' => PluginResource::make($plugin_model),
+                'status' => 201
+            ];
+        }
+    }
+
+    /**
+     * Edit plugin
+     *
+     * @param int $plugin_id
+     * @param array $fields
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function edit(int $plugin_id, array $fields): array
+    {
+        $plugin_model = $this->getInfo($plugin_id);
+
+        $validator = Validator::make($fields, (new UpdatePluginRequest)->setExtensionId($plugin_model->extension_id)->setPlugin($plugin_model)->rules());
+
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+
+            return [
+                'ok' => false,
+                'message' => trans('package-core::base.validation.errors'),
+                'errors' => $errors,
+                'status' => 422
+            ];
+        } else {
+            $data = $validator->validated();
+
+            $plugin_model->name = $data['name'];
+            $plugin_model->fields = $data['fields'] ?? [];
+            $plugin_model->status = $data['status'];
+
+            $plugin_model->save();
+
+            event(new PluginEditEvent($plugin_model));
+
+            return [
+                'ok' => true,
+                'message' => trans('extension::base.messages.plugin.edited'),
+                'data' => PluginResource::make($plugin_model),
+                'status' => 200
+            ];
+        }
+    }
+
+    /**
+     * Delete plugin
+     *
+     * @param int $plugin_id Plugin ID to delete
+     *
+     * @return array
+     * @throws Throwable
+     */
+    public function delete(int $plugin_id): array
+    {
+        $plugin_model = $this->getInfo($plugin_id);
+
+        $data = PluginResource::make($plugin_model);
+
+        event(new PluginDeleteEvent($plugin_model));
+
+        $plugin_model->delete();
+
+        return [
+            'ok' => true,
+            'message' => trans('extension::base.messages.plugin.deleted'),
+            'data' => $data,
+            'status' => 200
+        ];
+    }
+
+    /**
+     * Run plugin
+     *
+     * @param int $plugin_id
+     *
+     * @return string|null
+     * @throws Throwable
+     */
+    public function run(int $plugin_id): ?string
+    {
+        $plugin_model = $this->getInfo($plugin_id);
+
+        if (!$plugin_model->status) {
+            return null;
+        }
+
+        $extension_model = $plugin_model->extension;
+
+        $class = '\\App\\Extensions\\' . $extension_model->extension . '\\' . $extension_model->name . '\\' . $extension_model->name;
+
+        if (class_exists($class)) {
+            $plugin = new $class();
+
+            return $plugin->handle($plugin_model->fields);
+        }
+
+        return null;
+    }
+}

@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension;
+namespace JobMetric\Extension\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -167,7 +167,7 @@ class Extension extends AbstractCrudService
             throw new ExtensionClassNameNotMatchException($name);
         }
 
-        if (! is_subclass_of($namespace, Contracts\AbstractExtension::class)) {
+        if (! is_subclass_of($namespace, AbstractExtension::class)) {
             throw new ExtensionDontHaveContractException($name);
         }
 

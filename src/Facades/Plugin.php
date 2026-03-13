@@ -5,7 +5,7 @@ namespace JobMetric\Extension\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @mixin \JobMetric\Extension\Plugin
+ * @mixin \JobMetric\Extension\Services\Plugin
  *
  * @method static \Spatie\QueryBuilder\QueryBuilder query(array $filter = [], array $with = [])
  * @method static \Illuminate\Pagination\LengthAwarePaginator paginate(array $filter = [], int $page_limit = 15, array $with = [])

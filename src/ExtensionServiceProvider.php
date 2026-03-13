@@ -14,6 +14,8 @@ use JobMetric\Extension\Models\Plugin as PluginModel;
 use JobMetric\Extension\Support\ExtensionNamespaceRegistry;
 use JobMetric\Extension\Support\ExtensionRegistry;
 use JobMetric\Extension\Support\ExtensionTypeRegistry;
+use JobMetric\Extension\Services\Extension;
+use JobMetric\Extension\Services\Plugin;
 use JobMetric\Extension\Support\InstalledExtensionsFile;
 use JobMetric\PackageCore\Enums\RegisterClassTypeEnum;
 use JobMetric\PackageCore\Exceptions\MigrationFolderNotFoundException;
