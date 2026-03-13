@@ -21,7 +21,9 @@ use Illuminate\Support\Facades\Facade;
 class ExtensionRegistry extends Facade
 {
     /**
-     * Get the registered name of the component.
+     * Get the registered name of the component in the service container.
+     *
+     * This accessor must match the binding defined in the package service provider.
      *
      * @return string
      */

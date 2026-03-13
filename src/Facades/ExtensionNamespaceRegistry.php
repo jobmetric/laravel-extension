@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Facade;
  */
 class ExtensionNamespaceRegistry extends Facade
 {
+    /**
+     * Get the registered name of the component in the service container.
+     *
+     * This accessor must match the binding defined in the package service provider.
+     *
+     * @return string
+     */
     protected static function getFacadeAccessor(): string
     {
         return 'ExtensionNamespaceRegistry';
