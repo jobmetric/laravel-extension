@@ -8,9 +8,11 @@
         "jobmetric",
         "package",
         "extension",
+        "component",
+        "plugin",
         "management"
     ],
-    "homepage": "https://doc.jobmetric.net/package/laravel-extension",
+    "homepage": "https://jobmetric.github.io/packages/laravel-extension",
     "authors": [
         {
             "name": "Majid Mohammadian",
@@ -22,11 +24,9 @@
     "require": {
         "php": ">=8.0.1",
         "laravel/framework": ">=9.19",
-        "jobmetric/laravel-package-core": "^1.20",
-        "jobmetric/laravel-event-system": "^1.1",
-        "jobmetric/laravel-form": "^1.5",
-        "jobmetric/domi": "^1.13.1",
-        "jobmetric/panelio": "^1.16.1",
+        "jobmetric/laravel-package-core": "^1.38",
+        "jobmetric/laravel-event-system": "^2.8",
+        "jobmetric/laravel-form": "^1.6",
         "spatie/laravel-query-builder": "^6.3"
     },
     "autoload": {
@@ -45,8 +45,11 @@
             ],
             "aliases": {
                 "Extension": "JobMetric\\Extension\\Facades\\Extension",
-                "InstalledExtensionsFile": "JobMetric\\Extension\\Facades\\InstalledExtensionsFile",
-                "Plugin": "JobMetric\\Extension\\Facades\\Plugin"
+                "Plugin": "JobMetric\\Extension\\Facades\\Plugin",
+                "ExtensionNamespaceRegistry": "JobMetric\\Extension\\Facades\\ExtensionNamespaceRegistry",
+                "ExtensionTypeRegistry": "JobMetric\\Extension\\Facades\\ExtensionTypeRegistry",
+                "ExtensionRegistry": "JobMetric\\Extension\\Facades\\ExtensionRegistry",
+                "InstalledExtensionsFile": "JobMetric\\Extension\\Facades\\InstalledExtensionsFile"
             }
         }
     },
