@@ -275,7 +275,8 @@ class ExtensionCoreBooter
             return;
         }
 
-        $app->loadTranslationsFrom($basePath . DIRECTORY_SEPARATOR . 'lang', $configKey);
+        $langPath = $basePath . DIRECTORY_SEPARATOR . 'lang';
+        $app->make('translator')->addNamespace($configKey, $langPath);
 
         $extension?->translationsLoadedExtension($core, $app);
     }

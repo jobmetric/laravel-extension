@@ -153,7 +153,7 @@ class Extension extends AbstractCrudService
         $extension = $parsed['extension'];
         $name = $parsed['name'];
 
-        if (ExtensionModel::whereExtension($namespace)->exists()) {
+        if (ExtensionModel::whereNamespace($namespace)->exists()) {
             throw new ExtensionAlreadyInstalledException($name);
         }
 
@@ -213,7 +213,7 @@ class Extension extends AbstractCrudService
         $info = $this->loadExtensionInfo($parsed['folder'], $parsed['name']);
         $multiple = (bool) ($info['multiple'] ?? false);
 
-        $model = ExtensionModel::whereExtension($namespace)->with('plugins')->first();
+        $model = ExtensionModel::whereNamespace($namespace)->with('plugins')->first();
         if ($model === null) {
             throw new ExtensionNotInstalledException($parsed['name']);
         }
@@ -278,7 +278,7 @@ class Extension extends AbstractCrudService
             throw new ExtensionFromPackageNotDeletableException($parsed['name']);
         }
 
-        if (ExtensionModel::whereExtension($namespace)->exists()) {
+        if (ExtensionModel::whereNamespace($namespace)->exists()) {
             throw new ExtensionNotUninstalledException($parsed['name']);
         }
 
@@ -385,7 +385,7 @@ class Extension extends AbstractCrudService
     }
 
     /**
-     * Build FQCN for an extension from type and name.
+     * Build the extension class FQCN from type and name (e.g. App\Extensions\Module\Slider\Slider).
      *
      * @param string $extension
      * @param string $name
@@ -394,7 +394,9 @@ class Extension extends AbstractCrudService
      */
     public static function namespaceFor(string $extension, string $name): string
     {
-        return self::getAppExtensionsPrefix() . Str::studly($extension) . '\\' . Str::studly($name);
+        $name = Str::studly($name);
+
+        return self::getAppExtensionsPrefix() . Str::studly($extension) . '\\' . $name . '\\' . $name;
     }
 
     /**
@@ -550,17 +552,37 @@ class Extension extends AbstractCrudService
     private function parseNamespaceAndValidatePath(string $namespace): array
     {
         $path = resolveNamespacePath($namespace);
-        $parts = explode(DIRECTORY_SEPARATOR, $path);
-        $name = array_pop($parts);
-        $folder = implode(DIRECTORY_SEPARATOR, $parts);
-        array_pop($parts);
-        $extension = array_pop($parts);
+
+        if ($path === null || $path === '') {
+            throw new ExtensionFolderNotFoundException(class_basename($namespace));
+        }
+
+        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+
+        if (is_dir($path)) {
+            $folder = rtrim($path, DIRECTORY_SEPARATOR);
+            $name = basename($folder);
+            $runnerPath = $folder . DIRECTORY_SEPARATOR . $name . '.php';
+            if (! is_file($runnerPath)) {
+                throw new ExtensionRunnerNotFoundException($name);
+            }
+        } else {
+            $pathToFile = str_ends_with($path, '.php') ? $path : $path . '.php';
+            if (! is_file($pathToFile)) {
+                throw new ExtensionFolderNotFoundException(class_basename($namespace));
+            }
+            $folder = dirname($pathToFile);
+            $name = basename($pathToFile, '.php');
+        }
+
+        $extension = basename(dirname($folder));
 
         if (! is_dir($folder)) {
             throw new ExtensionFolderNotFoundException($name);
         }
 
-        if (! is_file($folder . DIRECTORY_SEPARATOR . 'extension.json')) {
+        $configPath = $folder . DIRECTORY_SEPARATOR . 'extension.json';
+        if (! is_file($configPath)) {
             throw new ExtensionConfigFileNotFoundException($name);
         }
 
