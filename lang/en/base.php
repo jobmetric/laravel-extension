@@ -131,6 +131,52 @@ return [
     ],
 
     "events" => [
+        "extension" => [
+            "group" => "Extension",
+            "installed" => [
+                "title" => "Extension Installed",
+                "description" => "This event is triggered when an extension is installed.",
+            ],
+            "uninstalled" => [
+                "title" => "Extension Uninstalled",
+                "description" => "This event is triggered when an extension is uninstalled.",
+            ],
+            "deleted" => [
+                "title" => "Extension Deleted",
+                "description" => "This event is triggered when extension files are deleted from disk.",
+            ],
+            "migrations_run" => [
+                "title" => "Extension Migrations Run",
+                "description" => "This event is triggered after extension migrations are run.",
+            ],
+            "migrations_rollback" => [
+                "title" => "Extension Migrations Rollback",
+                "description" => "This event is triggered after extension migrations are rolled back.",
+            ],
+        ],
+        "plugin" => [
+            "group" => "Plugin",
+            "stored" => [
+                "title" => "Plugin Stored",
+                "description" => "This event is triggered when a plugin is stored.",
+            ],
+            "deleted" => [
+                "title" => "Plugin Deleted",
+                "description" => "This event is triggered when a plugin is deleted.",
+            ],
+            "updated" => [
+                "title" => "Plugin Updated",
+                "description" => "This event is triggered when a plugin is updated.",
+            ],
+            "added" => [
+                "title" => "Plugin Added",
+                "description" => "This event is triggered when a plugin is added.",
+            ],
+            "edited" => [
+                "title" => "Plugin Edited",
+                "description" => "This event is triggered when a plugin is edited.",
+            ],
+        ],
         "kernel" => [
             "group" => "Extension Kernel",
             "extensions_discovered" => [

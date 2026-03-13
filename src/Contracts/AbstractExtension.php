@@ -4,8 +4,8 @@ namespace JobMetric\Extension\Contracts;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Event;
-use JobMetric\Extension\Events\ExtensionMigrationsRollbackEvent;
-use JobMetric\Extension\Events\ExtensionMigrationsRunEvent;
+use JobMetric\Extension\Events\Extension\ExtensionMigrationsRollbackEvent;
+use JobMetric\Extension\Events\Extension\ExtensionMigrationsRunEvent;
 use JobMetric\Extension\Kernel\EventTrait;
 use JobMetric\Extension\Kernel\ExtensionCore;
 use JobMetric\Extension\Models\ExtensionMigration;
