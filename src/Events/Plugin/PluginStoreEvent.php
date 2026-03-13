@@ -12,9 +12,11 @@ readonly class PluginStoreEvent implements DomainEvent
      * Create a new event instance.
      *
      * @param Plugin $plugin
+     * @param array<string, mixed> $data
      */
     public function __construct(
-        public Plugin $plugin
+        public Plugin $plugin,
+        public array $data = []
     ) {
     }
 

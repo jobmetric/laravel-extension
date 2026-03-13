@@ -2,13 +2,9 @@
 
 namespace JobMetric\Extension\Services;
 
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use JobMetric\Extension\Events\Plugin\PluginAddEvent;
+use Illuminate\Database\Eloquent\Model;
+use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Events\Plugin\PluginDeleteEvent;
-use JobMetric\Extension\Events\Plugin\PluginEditEvent;
 use JobMetric\Extension\Events\Plugin\PluginStoreEvent;
 use JobMetric\Extension\Events\Plugin\PluginUpdateEvent;
 use JobMetric\Extension\Exceptions\ExtensionNotFoundException;
@@ -16,186 +12,307 @@ use JobMetric\Extension\Exceptions\PluginNotFoundException;
 use JobMetric\Extension\Exceptions\PluginNotMatchExtensionException;
 use JobMetric\Extension\Exceptions\PluginNotMultipleException;
 use JobMetric\Extension\Facades\Extension as ExtensionFacade;
-use JobMetric\CustomField\CustomField;
-use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Http\Requests\StorePluginRequest;
 use JobMetric\Extension\Http\Requests\UpdatePluginRequest;
 use JobMetric\Extension\Http\Resources\PluginResource;
 use JobMetric\Extension\Models\Extension as ExtensionModel;
 use JobMetric\Extension\Models\Plugin as PluginModel;
+use JobMetric\Form\Form;
+use JobMetric\Form\FormBuilder;
+use JobMetric\Form\Support\IOForm;
+use JobMetric\PackageCore\Output\Response;
+use JobMetric\PackageCore\Services\AbstractCrudService;
 use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
-class Plugin
+/**
+ * Class Plugin
+ *
+ * CRUD and plugin lifecycle service for Plugin entities.
+ * Responsibilities:
+ * - Validate store/update via form-based rules (StorePluginRequest / UpdatePluginRequest).
+ * - Use AbstractCrudService store/update/destroy; validation in changeFieldStore/changeFieldUpdate.
+ * - Expose storeForExtension/updateForExtension for (extension_id, data) API; add/edit; getInfo; fields; run
+ * (AbstractExtension::handle).
+ */
+class Plugin extends AbstractCrudService
 {
     /**
-     * Get the specified plugin.
+     * Human-readable entity name key used in response messages.
      *
-     * @param array $filter
-     * @param array $with
+     * @var string
+     */
+    protected string $entityName = 'extension::base.entity_names.plugin';
+
+    /**
+     * Bound model/resource classes for the base CRUD.
+     *
+     * @var class-string
+     */
+    protected static string $modelClass = PluginModel::class;
+    protected static string $resourceClass = PluginResource::class;
+
+    /**
+     * Allowed fields for selection/filter/sort in QueryBuilder.
+     *
+     * @var string[]
+     */
+    protected static array $fields = [
+        'id',
+        'extension_id',
+        'name',
+        'fields',
+        'status',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
+     * Default sort applied by QueryBuilder.
+     *
+     * @var string[]
+     */
+    protected static array $defaultSort = ['name'];
+
+    /**
+     * Domain events mapping for CRUD lifecycle.
+     *
+     * @var class-string|null
+     */
+    protected static ?string $storeEventClass = PluginStoreEvent::class;
+    protected static ?string $updateEventClass = PluginUpdateEvent::class;
+    protected static ?string $deleteEventClass = PluginDeleteEvent::class;
+
+    /**
+     * Route store/update facade calls (extension_id, …) to storeForExtension/updateForExtension.
+     *
+     * @param string $name
+     * @param array $arguments
+     *
+     * @return mixed
+     * @throws Throwable
+     */
+    public function __call(string $name, array $arguments)
+    {
+        if ($name === 'store' && isset($arguments[0]) && is_int($arguments[0])) {
+            $extensionId = $arguments[0];
+            $data = $arguments[1] ?? [];
+            $with = $arguments[2] ?? [];
+
+            return $this->storeForExtension($extensionId, is_array($data) ? $data : [], is_array($with) ? $with : []);
+        }
+
+        if ($name === 'update' && count($arguments) >= 4 && is_int($arguments[0]) && is_int($arguments[1])) {
+            $extensionId = $arguments[0];
+            $pluginId = $arguments[1];
+            $data = $arguments[2] ?? [];
+            $with = $arguments[3] ?? [];
+
+            return $this->updateForExtension($extensionId, $pluginId, is_array($data) ? $data : [], is_array($with) ? $with : []);
+        }
+
+        return parent::__call($name, $arguments);
+    }
+
+    /**
+     * Build query with join to extension table for extra columns.
+     *
+     * @param array<string, mixed> $filters
+     * @param array<int, string> $with
+     * @param string|null $mode
      *
      * @return QueryBuilder
      */
-    public function query(array $filter = [], array $with = []): QueryBuilder
+    public function query(array $filters = [], array $with = [], ?string $mode = null): QueryBuilder
     {
-        $fields = [
-            'id',
+        $extensionTable = config('extension.tables.extension');
+        $pluginTable = config('extension.tables.plugin');
+
+        $base = PluginModel::query()->select([
+            $pluginTable . '.*',
+            'e.extension AS extension_type',
+            'e.name AS extension_name',
+            'e.namespace AS extension_namespace',
+            'e.info AS extension_info',
+        ])->leftJoin($extensionTable . ' AS e', 'e.id', '=', $pluginTable . '.extension_id');
+
+        $qb = QueryBuilder::for(PluginModel::class)
+            ->fromSub($base, $pluginTable)
+            ->allowedFields(array_merge(static::$fields, [
+                'extension_type',
+                'extension_name',
+                'extension_namespace',
+                'extension_info',
+            ]))
+            ->allowedSorts(static::$fields)
+            ->allowedFilters(static::$fields)
+            ->defaultSort(static::$defaultSort)
+            ->where($filters);
+
+        $this->afterQuery($qb, $filters, $with, $mode);
+
+        if ($with !== []) {
+            $qb->with($with);
+        }
+
+        return $qb;
+    }
+
+    /**
+     * Validate and normalize payload before create.
+     *
+     * Uses dto() with StorePluginRequest (form rules from AbstractExtension::form())
+     * and IOForm::forStore to normalize fields for storage.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return void
+     * @throws Throwable
+     */
+    protected function changeFieldStore(array &$data): void
+    {
+        $extensionId = isset($data['extension_id']) ? (int) $data['extension_id'] : null;
+        if ($extensionId === null) {
+            $data = array_intersect_key($data, array_flip([
+                'extension_id',
+                'name',
+                'fields',
+                'status',
+            ]));
+
+            if (isset($data['fields']) && ! is_array($data['fields'])) {
+                $data['fields'] = [];
+            }
+
+            return;
+        }
+
+        $data = dto($data, StorePluginRequest::class, [
+            'extension_id' => $extensionId,
+        ]);
+
+        $extension = ExtensionModel::find($extensionId);
+        if ($extension !== null) {
+            $driver = app()->make($extension->namespace);
+            if ($driver instanceof AbstractExtension) {
+                $data['fields'] = IOForm::forStore($driver->form(), $data['fields'] ?? []);
+            }
+        }
+
+        $data = array_intersect_key($data, array_flip([
             'extension_id',
             'name',
             'fields',
             'status',
-            'extension_type',
-            'extension_name',
-            'extension_namespace',
-            'extension_info',
-            'created_at',
-            'updated_at'
-        ];
+        ]));
 
-        $extension_table = config('extension.tables.extension');
-        $plugin_table = config('extension.tables.plugin');
-
-        $query = PluginModel::query()->select([
-            $plugin_table . '.*',
-            'e.extension AS extension_type',
-            'e.name as extension_name',
-            'e.namespace as extension_namespace',
-            'e.info as extension_info',
-        ]);
-
-        // Join the extension table for select plugin
-        $query->leftJoin($extension_table . ' as e', function ($join) use ($plugin_table) {
-            $join->on('e.id', '=', $plugin_table . '.extension_id');
-        });
-
-        $query = QueryBuilder::for(PluginModel::class)
-            ->fromSub($query, $plugin_table)
-            ->allowedFields($fields)
-            ->allowedSorts($fields)
-            ->allowedFilters($fields)
-            ->defaultSort([
-                'name'
-            ])
-            ->where($filter);
-
-        if (!empty($with)) {
-            $query->with($with);
+        if (isset($data['fields']) && ! is_array($data['fields'])) {
+            $data['fields'] = [];
         }
-
-        return $query;
     }
 
     /**
-     * Paginate the specified plugin.
-     *
-     * @param array $filter
-     * @param int $page_limit
-     * @param array $with
-     *
-     * @return LengthAwarePaginator
-     */
-    public function paginate(array $filter = [], int $page_limit = 15, array $with = []): LengthAwarePaginator
-    {
-        return $this->query($filter, $with)->paginate($page_limit);
-    }
-
-    /**
-     * Get all plugins.
-     *
-     * @param array $filter
-     * @param array $with
-     *
-     * @return AnonymousResourceCollection
-     */
-    public function all(array $filter = [], array $with = []): AnonymousResourceCollection
-    {
-        return PluginResource::collection(
-            $this->query($filter, $with)->get()
-        );
-    }
-
-    /**
-     * Store a newly created plugin in storage.
+     * Convenience: merge extension_id into data and call store(array $data, array $with).
+     * Uses AbstractCrudService::store(); validation runs in changeFieldStore.
      *
      * @param int $extension_id
-     * @param array $data
+     * @param array<string, mixed> $data
+     * @param array<int, string> $with
      *
-     * @return array
+     * @return Response
      * @throws Throwable
      */
-    public function store(int $extension_id, array $data): array
+    public function storeForExtension(int $extension_id, array $data, array $with = []): Response
     {
-        /**
-         * @var ExtensionModel $extension
-         */
-        $extension = ExtensionModel::find($extension_id);
+        $data['extension_id'] = $extension_id;
 
-        if (!$extension) {
-            throw new ExtensionNotFoundException;
-        }
-
-        $validator = Validator::make($data, (new StorePluginRequest)->setExtensionId($extension_id)->rules());
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
-            return [
-                'ok' => false,
-                'message' => trans('package-core::base.validation.errors'),
-                'errors' => $errors,
-                'status' => 422
-            ];
-        } else {
-            $data = $validator->validated();
-        }
-
-        return DB::transaction(function () use ($extension_id, $data) {
-            $plugin = new PluginModel;
-
-            $plugin->extension_id = $extension_id;
-            $plugin->name = $data['name'];
-            $plugin->fields = $data['fields'] ?? [];
-            $plugin->status = $data['status'];
-
-            $plugin->save();
-
-            event(new PluginStoreEvent($plugin));
-
-            return [
-                'ok' => true,
-                'message' => trans('extension::base.messages.plugin.stored'),
-                'data' => PluginResource::make($plugin),
-                'status' => 201
-            ];
-        });
+        return $this->store($data, $with);
     }
 
     /**
-     * Update the specified extension plugin.
+     * Add a plugin for extension (by type and name). Validates with form; enforces multiple when needed.
+     *
+     * @param string $extension            Extension type (e.g. Module).
+     * @param string $name                 Extension name (e.g. Slider).
+     * @param array<string, mixed> $fields name, status, fields (validated via StorePluginRequest).
+     * @param array<int, string> $with
+     *
+     * @return Response
+     * @throws ExtensionNotFoundException
+     * @throws PluginNotMultipleException
+     * @throws Throwable
+     */
+    public function add(string $extension, string $name, array $fields, array $with = []): Response
+    {
+        $extensionModel = ExtensionFacade::getInfo($extension, $name);
+        if (! $extensionModel instanceof ExtensionModel) {
+            throw new ExtensionNotFoundException();
+        }
+
+        $multiple = (bool) ($extensionModel->info['multiple'] ?? false);
+        if (! $multiple) {
+            $exists = PluginModel::query()->where('extension_id', $extensionModel->id)->exists();
+            if ($exists) {
+                throw new PluginNotMultipleException($extension, $name);
+            }
+        }
+
+        return $this->storeForExtension($extensionModel->id, $fields, $with);
+    }
+
+    /**
+     * Validate and normalize payload before update.
+     *
+     * Uses dto() with UpdatePluginRequest (form rules from AbstractExtension::form())
+     * and IOForm::forStore to normalize fields for storage.
+     *
+     * @param Model $model The plugin model instance.
+     * @param array<string, mixed> $data
+     *
+     * @return void
+     * @throws Throwable
+     */
+    protected function changeFieldUpdate(Model $model, array &$data): void
+    {
+        /** @var PluginModel $model */
+        $data = dto($data, UpdatePluginRequest::class, [
+            'extension_id' => $model->extension_id,
+            'plugin'       => $model,
+        ]);
+
+        $extension = ExtensionModel::find($model->extension_id);
+        if ($extension !== null) {
+            $driver = app()->make($extension->namespace);
+            if ($driver instanceof AbstractExtension && array_key_exists('fields', $data)) {
+                $data['fields'] = IOForm::forStore($driver->form(), $data['fields'] ?? []);
+            }
+        }
+
+        $data = array_intersect_key($data, array_flip(['name', 'fields', 'status']));
+        if (array_key_exists('fields', $data) && ! is_array($data['fields'])) {
+            $data['fields'] = [];
+        }
+    }
+
+    /**
+     * Convenience: ensure plugin belongs to extension, then call update(int $id, array $data, array $with).
+     * Uses AbstractCrudService::update(); validation runs in changeFieldUpdate.
      *
      * @param int $extension_id
      * @param int $plugin_id
-     * @param array $data
+     * @param array<string, mixed> $data
+     * @param array<int, string> $with
      *
-     * @return array
+     * @return Response
+     * @throws PluginNotFoundException
+     * @throws PluginNotMatchExtensionException
      * @throws Throwable
      */
-    public function update(int $extension_id, int $plugin_id, array $data): array
+    public function updateForExtension(int $extension_id, int $plugin_id, array $data, array $with = []): Response
     {
-        /**
-         * @var ExtensionModel $extension
-         */
-        $extension = ExtensionModel::find($extension_id);
-
-        if (!$extension) {
-            throw new ExtensionNotFoundException;
-        }
-
-        /**
-         * @var PluginModel $plugin
-         */
         $plugin = PluginModel::find($plugin_id);
 
-        if (!$plugin) {
+        if ($plugin === null) {
             throw new PluginNotFoundException($plugin_id);
         }
 
@@ -203,298 +320,142 @@ class Plugin
             throw new PluginNotMatchExtensionException($extension_id, $plugin_id);
         }
 
-        $validator = Validator::make($data, (new UpdatePluginRequest)->setExtensionId($extension_id)->setPlugin($plugin)->rules());
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
-            return [
-                'ok' => false,
-                'message' => trans('package-core::base.validation.errors'),
-                'errors' => $errors,
-                'status' => 422
-            ];
-        } else {
-            $data = $validator->validated();
-        }
-
-        return DB::transaction(function () use ($plugin, $data) {
-            if (array_key_exists('name', $data)) {
-                $plugin->name = $data['name'];
-            }
-
-            if (array_key_exists('status', $data)) {
-                $plugin->status = $data['status'];
-            }
-
-            if (array_key_exists('fields', $data)) {
-                $plugin->fields = $data['fields'];
-            }
-
-            $plugin->save();
-
-            event(new PluginUpdateEvent($plugin));
-
-            return [
-                'ok' => true,
-                'message' => trans('extension::base.messages.plugin.updated'),
-                'data' => PluginResource::make($plugin),
-                'status' => 200
-            ];
-        });
+        return $this->update($plugin_id, $data, $with);
     }
 
     /**
-     * Get plugin info.
+     * Edit a plugin by id. Validates with form (UpdatePluginRequest).
+     *
+     * @param int $plugin_id
+     * @param array<string, mixed> $fields
+     * @param array<int, string> $with
+     *
+     * @return Response
+     * @throws PluginNotFoundException
+     * @throws Throwable
+     */
+    public function edit(int $plugin_id, array $fields, array $with = []): Response
+    {
+        $plugin = PluginModel::with('extension')->find($plugin_id);
+        if ($plugin === null) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+
+        return $this->update($plugin_id, $fields, $with);
+    }
+
+    /**
+     * Get plugin by id; optionally as resource.
      *
      * @param int $plugin_id
      * @param bool $has_resource
      *
      * @return PluginModel|PluginResource
-     * @throws Throwable
+     * @throws PluginNotFoundException
      */
     public function getInfo(int $plugin_id, bool $has_resource = false): PluginModel|PluginResource
     {
-        /**
-         * @var PluginModel $plugin_model
-         */
-        $plugin_model = PluginModel::with('extension')->find($plugin_id);
-
-        if (!$plugin_model) {
+        $plugin = PluginModel::with('extension')->find($plugin_id);
+        if ($plugin === null) {
             throw new PluginNotFoundException($plugin_id);
         }
 
-        if ($has_resource) {
-            return PluginResource::make($plugin_model);
-        }
-
-        return $plugin_model;
+        return $has_resource ? PluginResource::make($plugin) : $plugin;
     }
 
     /**
-     * Get fields for plugin form (add/edit). Built from extension's form() (FormBuilder).
+     * Form definition and values for plugin add/edit from extension form().
      *
-     * @param string $extension
-     * @param string $name
-     * @param int|null $plugin_id
+     * Uses Form package: form structure via Form::toArray(), values via IOForm::toArray()
+     * so the consumer can render the form with the same structure as the Form package.
      *
-     * @return array<int, array<string, mixed>>
+     * @param string $extension   Extension type (e.g. Module).
+     * @param string $name        Extension name (e.g. Slider).
+     * @param int|null $plugin_id Existing plugin id for edit; null for add.
+     *
+     * @return array{form: array<string, mixed>, values: array<string, mixed>}
      * @throws Throwable
      */
-    public function fields(string $extension, string $name, int $plugin_id = null): array
+    public function fields(string $extension, string $name, ?int $plugin_id = null): array
     {
-        $extension_model = ExtensionFacade::getInfo($extension, $name);
-        $driver = app()->make($extension_model->namespace);
-
-        if (!$driver instanceof AbstractExtension) {
-            return [];
-        }
-
-        $plugin_info = null;
-        if ($plugin_id) {
-            $plugin_info = $this->getInfo($plugin_id);
-        }
-
-        $customFields = $driver->form()->getAllCustomFields(true);
-        $list = [];
-
-        $list[] = [
-            'extension' => $extension,
-            'extension_name' => $name,
-            'name' => 'name',
-            'type' => 'text',
-            'required' => true,
-            'default' => null,
-            'label' => trans('extension::base.form.plugin.fields.name.title'),
-            'info' => null,
-            'value' => $plugin_info?->name,
-        ];
-
-        $list[] = [
-            'extension' => $extension,
-            'extension_name' => $name,
-            'name' => 'status',
-            'type' => 'boolean',
-            'required' => true,
-            'default' => true,
-            'label' => trans('package-core::base.components.boolean_status.label'),
-            'info' => null,
-            'value' => $plugin_info?->status,
-        ];
-
-        foreach ($customFields as $customField) {
-            if (!$customField instanceof CustomField) {
-                continue;
-            }
-            $fieldName = $customField->params['name'] ?? null;
-            if ($fieldName === null || $fieldName === '') {
-                continue;
-            }
-            $list[] = [
-                'extension' => $extension,
-                'extension_name' => $name,
-                'name' => $fieldName,
-                'type' => $customField->type ?? 'text',
-                'required' => (bool) ($customField->params['required'] ?? false),
-                'default' => $customField->params['value'] ?? null,
-                'label' => $customField->label ?? $fieldName,
-                'info' => $customField->info ?? null,
-                'value' => $plugin_info && isset($plugin_info->fields[$fieldName]) ? $plugin_info->fields[$fieldName] : ($customField->params['value'] ?? null),
-            ];
-        }
-
-        return $list;
-    }
-
-    /**
-     * Add plugin
-     *
-     * @param string $extension
-     * @param string $name
-     * @param array $fields
-     *
-     * @return array
-     * @throws Throwable
-     */
-    public function add(string $extension, string $name, array $fields): array
-    {
-        $extension_model = ExtensionFacade::getInfo($extension, $name);
-
-        if (!$extension_model->info['multiple']) {
-            $plugin_model = PluginModel::query()->where('extension_id', $extension_model->id)->first();
-            if ($plugin_model) {
-                throw new PluginNotMultipleException($extension, $name);
-            }
-        }
-
-        $validator = Validator::make($fields, (new StorePluginRequest)->setExtensionId($extension_model->id)->rules());
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
+        $extensionModel = ExtensionFacade::getInfo($extension, $name);
+        if (! $extensionModel instanceof ExtensionModel) {
             return [
-                'ok' => false,
-                'message' => trans('package-core::base.validation.errors'),
-                'errors' => $errors,
-                'status' => 422
-            ];
-        } else {
-            $data = $validator->validated();
-
-            $plugin_model = new PluginModel;
-
-            $plugin_model->extension_id = $extension_model->id;
-            $plugin_model->name = $data['name'];
-            $plugin_model->fields = $data['fields'] ?? [];
-            $plugin_model->status = $data['status'];
-
-            $plugin_model->save();
-
-            event(new PluginAddEvent($plugin_model));
-
-            return [
-                'ok' => true,
-                'message' => trans('extension::base.messages.plugin.added'),
-                'data' => PluginResource::make($plugin_model),
-                'status' => 201
+                'form'   => [],
+                'values' => [],
             ];
         }
-    }
 
-    /**
-     * Edit plugin
-     *
-     * @param int $plugin_id
-     * @param array $fields
-     *
-     * @return array
-     * @throws Throwable
-     */
-    public function edit(int $plugin_id, array $fields): array
-    {
-        $plugin_model = $this->getInfo($plugin_id);
-
-        $validator = Validator::make($fields, (new UpdatePluginRequest)->setExtensionId($plugin_model->extension_id)->setPlugin($plugin_model)->rules());
-
-        if ($validator->fails()) {
-            $errors = $validator->errors()->all();
-
+        $driver = app()->make($extensionModel->namespace);
+        if (! $driver instanceof AbstractExtension) {
             return [
-                'ok' => false,
-                'message' => trans('package-core::base.validation.errors'),
-                'errors' => $errors,
-                'status' => 422
-            ];
-        } else {
-            $data = $validator->validated();
-
-            $plugin_model->name = $data['name'];
-            $plugin_model->fields = $data['fields'] ?? [];
-            $plugin_model->status = $data['status'];
-
-            $plugin_model->save();
-
-            event(new PluginEditEvent($plugin_model));
-
-            return [
-                'ok' => true,
-                'message' => trans('extension::base.messages.plugin.edited'),
-                'data' => PluginResource::make($plugin_model),
-                'status' => 200
+                'form'   => [],
+                'values' => [],
             ];
         }
-    }
 
-    /**
-     * Delete plugin
-     *
-     * @param int $plugin_id Plugin ID to delete
-     *
-     * @return array
-     * @throws Throwable
-     */
-    public function delete(int $plugin_id): array
-    {
-        $plugin_model = $this->getInfo($plugin_id);
+        $form = $this->resolveForm($driver->form());
+        $pluginInfo = $plugin_id !== null ? $this->getInfo($plugin_id) : null;
 
-        $data = PluginResource::make($plugin_model);
+        $extensionValues = IOForm::toArray($form, is_array($pluginInfo->fields ?? null) ? $pluginInfo->fields : []);
 
-        event(new PluginDeleteEvent($plugin_model));
-
-        $plugin_model->delete();
+        $values = array_merge([
+            'name'   => $pluginInfo?->name ?? '',
+            'status' => $pluginInfo?->status ?? true,
+        ], $extensionValues);
 
         return [
-            'ok' => true,
-            'message' => trans('extension::base.messages.plugin.deleted'),
-            'data' => $data,
-            'status' => 200
+            'form'   => $form->toArray(),
+            'values' => $values,
         ];
     }
 
     /**
-     * Run plugin
+     * Run the extension handle() for the given plugin (uses AbstractExtension::handle).
      *
      * @param int $plugin_id
      *
      * @return string|null
+     * @throws PluginNotFoundException
      * @throws Throwable
      */
     public function run(int $plugin_id): ?string
     {
-        $plugin_model = $this->getInfo($plugin_id);
-
-        if (!$plugin_model->status) {
+        $plugin = PluginModel::with('extension')->find($plugin_id);
+        if ($plugin === null) {
+            throw new PluginNotFoundException($plugin_id);
+        }
+        if (! $plugin->status) {
             return null;
         }
 
-        $extension_model = $plugin_model->extension;
-
-        $class = '\\App\\Extensions\\' . $extension_model->extension . '\\' . $extension_model->name . '\\' . $extension_model->name;
-
-        if (class_exists($class)) {
-            $plugin = new $class();
-
-            return $plugin->handle($plugin_model->fields);
+        $namespace = $plugin->extension->namespace ?? '';
+        if ($namespace === '' || ! class_exists($namespace)) {
+            return null;
         }
 
-        return null;
+        $instance = app($namespace);
+        if (! $instance instanceof AbstractExtension) {
+            return null;
+        }
+
+        $fields = $plugin->fields;
+        if (! is_array($fields)) {
+            $fields = [];
+        }
+
+        return $instance->handle($fields);
+    }
+
+    /**
+     * Resolve Form instance from FormBuilder or Form.
+     *
+     * @param FormBuilder|Form $form
+     *
+     * @return Form
+     */
+    protected function resolveForm(FormBuilder|Form $form): Form
+    {
+        return $form instanceof FormBuilder ? $form->build() : $form;
     }
 }

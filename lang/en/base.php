@@ -14,6 +14,7 @@ return [
 
     'entity_names' => [
         'extension' => 'Extension',
+        'plugin' => 'Plugin',
     ],
 
     "validation" => [

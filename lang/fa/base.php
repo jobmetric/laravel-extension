@@ -14,6 +14,7 @@ return [
 
     'entity_names' => [
         'extension' => 'افزونه',
+        'plugin' => 'پلاگین',
     ],
 
     "validation" => [
