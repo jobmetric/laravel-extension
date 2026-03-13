@@ -28,6 +28,7 @@ class PluginResource extends JsonResource
      * Transform the resource into an array.
      *
      * @param Request $request
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -35,12 +36,6 @@ class PluginResource extends JsonResource
         return [
             'id' => $this->id,
             'extension_id' => $this->extension_id,
-
-            // Loaded relations
-            'extension' => $this->whenLoaded('extension', function () {
-                return ExtensionResource::make($this->extension);
-            }),
-
             'name' => trans($this->name),
             'fields' => $this->fields,
             'status' => (bool) $this->status,
@@ -48,6 +43,11 @@ class PluginResource extends JsonResource
             // ISO 8601 timestamps for interoperability across clients
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+
+            // Loaded relations
+            'extension' => $this->whenLoaded('extension', function () {
+                return ExtensionResource::make($this->extension);
+            }),
         ];
     }
 }

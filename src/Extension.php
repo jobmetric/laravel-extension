@@ -183,9 +183,13 @@ class Extension extends AbstractCrudService
             'info'      => $info,
         ];
 
-        $this->store($data, ['plugins']);
+        $response = $this->store($data, ['plugins']);
 
         InstalledExtensionsFile::syncFromDatabase(app());
+
+        $data['resource'] = $response->data instanceof ExtensionResource
+            ? $response->data->resolve(request())
+            : null;
 
         $message = trans('extension::base.messages.extension.installed', [
             'name' => trans($info['title'] ?? $name),
@@ -219,6 +223,9 @@ class Extension extends AbstractCrudService
         }
 
         return DB::transaction(function () use ($namespace, $model, $info, $parsed) {
+            $model->loadCount('plugins');
+            $resourceArray = ExtensionResource::make($model)->resolve(request());
+
             $instance = app($namespace);
             if (method_exists($instance, 'uninstall')) {
                 $instance->uninstall();
@@ -242,6 +249,7 @@ class Extension extends AbstractCrudService
                 'extension' => $parsed['extension'],
                 'name'      => $parsed['name'],
                 'info'      => $info,
+                'resource'  => $resourceArray,
             ];
 
             return Response::make(true, $message, $data);
