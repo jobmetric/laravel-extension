@@ -1,158 +1,37 @@
 <?php
 
-use Illuminate\Support\Str;
 use JobMetric\Extension\Facades\Extension;
-use JobMetric\Extension\Facades\Plugin;
+use JobMetric\PackageCore\Output\Response;
 
-if (!function_exists('extension_install')) {
+if (! function_exists('extension_install')) {
     /**
-     * Install extension
+     * Install an extension by type and name (resolves namespace and calls Extension::install).
      *
-     * @param string $extension
-     * @param string $name
+     * @param string $extension Extension type (e.g. Module).
+     * @param string $name      Extension name (e.g. Banner).
      *
-     * @return array
+     * @return Response
      * @throws Throwable
      */
-    function extension_install(string $extension, string $name): array
+    function extension_install(string $extension, string $name): Response
     {
-        return Extension::install($extension, $name);
+        return Extension::install(Extension::namespaceFor($extension, $name));
     }
 }
 
-if (!function_exists('extension_uninstall')) {
+if (! function_exists('extension_uninstall')) {
     /**
-     * Uninstall extension
+     * Uninstall an extension by type and name (resolves namespace and calls Extension::uninstall).
      *
-     * @param string $extension
-     * @param string $name
-     * @param bool $force_delete_plugin
+     * @param string $extension         Extension type (e.g. Module).
+     * @param string $name              Extension name (e.g. Banner).
+     * @param bool $force_delete_plugin When true, removes plugins associated with the extension.
      *
-     * @return array
+     * @return Response
      * @throws Throwable
      */
-    function extension_uninstall(string $extension, string $name, bool $force_delete_plugin = false): array
+    function extension_uninstall(string $extension, string $name, bool $force_delete_plugin = false): Response
     {
-        return Extension::uninstall($extension, $name, $force_delete_plugin);
-    }
-}
-
-if (!function_exists('extension_update')) {
-    /**
-     * Update extension
-     *
-     * @param string $extension
-     * @param string $name
-     *
-     * @return array
-     * @throws Throwable
-     */
-    function extension_update(string $extension, string $name): array
-    {
-        return Extension::update($extension, $name);
-    }
-}
-
-if (!function_exists('plugin_add')) {
-    /**
-     * Add plugin
-     *
-     * @param string $extension
-     * @param string $name
-     * @param array $fields
-     *
-     * @return array
-     * @throws Throwable
-     */
-    function plugin_add(string $extension, string $name, array $fields): array
-    {
-        return Plugin::add($extension, $name, $fields);
-    }
-}
-
-if (!function_exists('plugin_edit')) {
-    /**
-     * Edit plugin
-     *
-     * @param int $plugin_id
-     * @param array $fields
-     *
-     * @return array
-     * @throws Throwable
-     */
-    function plugin_edit(int $plugin_id, array $fields): array
-    {
-        return Plugin::edit($plugin_id, $fields);
-    }
-}
-
-if (!function_exists('plugin_delete')) {
-    /**
-     * Delete plugin
-     *
-     * @param int $plugin_id
-     *
-     * @return array
-     * @throws Throwable
-     */
-    function plugin_delete(int $plugin_id): array
-    {
-        return Plugin::delete($plugin_id);
-    }
-}
-
-if (!function_exists('plugin_run')) {
-    /**
-     * Run plugin
-     *
-     * @param int $plugin_id
-     *
-     * @return string|null
-     * @throws Throwable
-     */
-    function plugin_run(int $plugin_id): ?string
-    {
-        return Plugin::run($plugin_id);
-    }
-}
-
-if (!function_exists('loadTranslationExtension')) {
-    /**
-     * Load Translation Extension
-     *
-     * @param string $path
-     *
-     * @return void
-     * @throws Throwable
-     */
-    function loadTranslationExtension(string $path): void
-    {
-        if (is_dir($path)) {
-            $ds = DIRECTORY_SEPARATOR;
-            $extensions = array_diff(scandir($path), ['..', '.']);
-
-            foreach ($extensions as $extension) {
-                $modules = array_diff(scandir($path . $ds . $extension), ['..', '.']);
-                foreach ($modules as $module) {
-                    $langFile = $path . $ds . $extension . $ds . $module . $ds . 'lang' . $ds . app()->getLocale() . $ds . 'extension.php';
-
-                    if (!file_exists($langFile)) {
-                        $langFile = $path . $ds . $extension . $ds . $module . $ds . 'lang' . $ds . 'en' . $ds . 'extension.php';
-                    }
-
-                    if (file_exists($langFile)) {
-                        $translationPath = $path . $ds . $extension . $ds . $module . $ds . 'lang';
-
-                        // Now directly calling the loadTranslationsFrom logic
-                        $key = 'extension-' . Str::kebab($extension) . '-' . Str::kebab($module);
-
-                        // Register translations manually using a Translation Loader
-                        app('translator')->addNamespace($key, $translationPath);
-                    }
-                }
-            }
-        } else {
-            throw new Exception('Path extension not found!');
-        }
+        return Extension::uninstall(Extension::namespaceFor($extension, $name), $force_delete_plugin);
     }
 }
