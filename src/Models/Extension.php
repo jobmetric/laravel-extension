@@ -32,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Extension whereExtension(string $extension)
  * @method static Builder|Extension whereName(string $name)
  * @method static Builder|Extension whereNamespace(string $namespace)
+ * @method static Builder|Extension whereExtensionAndName(string $extension, string $name)
+ *
  * @method static Extension|null find(int|null $extension_id)
  * @method static Extension create(array $attributes)
  */
@@ -81,5 +83,22 @@ class Extension extends Model
     public function plugins(): HasMany
     {
         return $this->hasMany(Plugin::class, 'extension_id');
+    }
+
+    /**
+     * Scope by extension type and name.
+     *
+     * @param Builder $query
+     * @param string $extension
+     * @param string $name
+     *
+     * @return Builder
+     */
+    public function scopeWhereExtensionAndName(Builder $query, string $extension, string $name): Builder
+    {
+        return $query->where([
+            'extension' => $extension,
+            'name'      => $name,
+        ]);
     }
 }

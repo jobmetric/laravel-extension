@@ -153,7 +153,7 @@ class Extension extends AbstractCrudService
         $extension = $parsed['extension'];
         $name = $parsed['name'];
 
-        if (ExtensionModel::extensionNamespace($namespace)->exists()) {
+        if (ExtensionModel::whereExtension($namespace)->exists()) {
             throw new ExtensionAlreadyInstalledException($name);
         }
 
@@ -209,7 +209,7 @@ class Extension extends AbstractCrudService
         $info = $this->loadExtensionInfo($parsed['folder'], $parsed['name']);
         $multiple = (bool) ($info['multiple'] ?? false);
 
-        $model = ExtensionModel::extensionNamespace($namespace)->with('plugins')->first();
+        $model = ExtensionModel::whereExtension($namespace)->with('plugins')->first();
         if ($model === null) {
             throw new ExtensionNotInstalledException($parsed['name']);
         }
@@ -270,7 +270,7 @@ class Extension extends AbstractCrudService
             throw new ExtensionFromPackageNotDeletableException($parsed['name']);
         }
 
-        if (ExtensionModel::extensionNamespace($namespace)->exists()) {
+        if (ExtensionModel::whereExtension($namespace)->exists()) {
             throw new ExtensionNotUninstalledException($parsed['name']);
         }
 
@@ -367,7 +367,7 @@ class Extension extends AbstractCrudService
         string $name,
         bool $has_resource = false
     ): ExtensionModel|ExtensionResource {
-        $model = ExtensionModel::extensionName($extension, $name)->withCount('plugins')->first();
+        $model = ExtensionModel::whereExtensionAndName($extension, $name)->withCount('plugins')->first();
 
         if ($model === null) {
             throw new ExtensionNotInstalledException($name);
