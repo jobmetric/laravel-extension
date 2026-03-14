@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Support;
+namespace JobMetric\Extension\Tests\Unit\Support;
 
 use JobMetric\Extension\Support\ExtensionNamespaceRegistry;
 use JobMetric\Extension\Tests\TestCase;

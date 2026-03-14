@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Support;
+namespace JobMetric\Extension\Tests\Feature\Support;
 
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Contracts\Foundation\Application;

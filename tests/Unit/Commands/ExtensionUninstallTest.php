@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Commands;
+namespace JobMetric\Extension\Tests\Unit\Commands;
 
 use JobMetric\Extension\Commands\ExtensionUninstall;
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;

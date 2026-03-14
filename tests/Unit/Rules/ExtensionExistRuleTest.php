@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Rules;
+namespace JobMetric\Extension\Tests\Unit\Rules;
 
 use JobMetric\Extension\Facades\Extension;
 use JobMetric\Extension\Rules\ExtensionExistRule;

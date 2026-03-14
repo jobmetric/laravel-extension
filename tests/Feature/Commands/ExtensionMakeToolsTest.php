@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Commands;
+namespace JobMetric\Extension\Tests\Feature\Commands;
 
 use Illuminate\Support\Facades\File;
 use JobMetric\Extension\Commands\ExtensionMake;

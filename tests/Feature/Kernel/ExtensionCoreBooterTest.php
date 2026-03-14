@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Kernel;
+namespace JobMetric\Extension\Tests\Feature\Kernel;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;

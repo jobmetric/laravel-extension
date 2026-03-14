@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Kernel;
+namespace JobMetric\Extension\Tests\Unit\Kernel;
 
 use Illuminate\Console\Command;
 use JobMetric\Extension\Exceptions\ExtensionCoreBasePathNotFoundException;

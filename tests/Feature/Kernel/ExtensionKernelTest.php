@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Kernel;
+namespace JobMetric\Extension\Tests\Feature\Kernel;
 
 use JobMetric\Extension\Contracts\AbstractExtension;
 use JobMetric\Extension\Kernel\ExtensionCore;

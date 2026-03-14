@@ -1,6 +1,6 @@
 <?php
 
-namespace JobMetric\Extension\Tests\Services;
+namespace JobMetric\Extension\Tests\Feature\Services;
 
 use JobMetric\Extension\Exceptions\ExtensionNotInstalledException;
 use JobMetric\Extension\Facades\ExtensionTypeRegistry;
