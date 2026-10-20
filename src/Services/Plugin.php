@@ -37,6 +37,13 @@ use Throwable;
  */
 class Plugin extends AbstractCrudService
 {
+    /** @var array<string, class-string<\JobMetric\EventSystem\Contracts\DomainEvent>> */
+    protected static array $committedEventClasses = [
+        'store' => \JobMetric\Extension\Events\Plugin\PluginStoreCommittedEvent::class,
+        'update' => \JobMetric\Extension\Events\Plugin\PluginUpdateCommittedEvent::class,
+        'destroy' => \JobMetric\Extension\Events\Plugin\PluginDeleteCommittedEvent::class,
+    ];
+
     /**
      * Human-readable entity name key used in response messages.
      *

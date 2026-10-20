@@ -45,6 +45,12 @@ use Throwable;
  */
 class Extension extends AbstractCrudService
 {
+    /** @var array<string, class-string<\JobMetric\EventSystem\Contracts\DomainEvent>> */
+    protected static array $committedEventClasses = [
+        'store' => \JobMetric\Extension\Events\Extension\ExtensionInstallCommittedEvent::class,
+        'destroy' => \JobMetric\Extension\Events\Extension\ExtensionUninstallCommittedEvent::class,
+    ];
+
     /**
      * Human-readable entity name key used in response messages.
      *
@@ -234,6 +240,9 @@ class Extension extends AbstractCrudService
             $model->plugins->each(function ($plugin) {
                 event(new PluginDeleteEvent($plugin));
                 $plugin->delete();
+                if (! $plugin->exists) {
+                    app(\JobMetric\EventSystem\Support\CommittedEventDispatcher::class)->dispatch(new \JobMetric\Extension\Events\Plugin\PluginDeleteCommittedEvent($plugin->getKey()), $plugin->getConnectionName());
+                }
             });
 
             $this->destroy($model->id);
@@ -285,6 +294,7 @@ class Extension extends AbstractCrudService
         File::deleteDirectory($parsed['folder']);
 
         event(new ExtensionDeleteEvent(Str::studly($type), $namespace, $parsed['name']));
+        app(\JobMetric\EventSystem\Support\CommittedEventDispatcher::class)->dispatch(new \JobMetric\Extension\Events\Extension\ExtensionDeleteCommittedEvent($namespace));
 
         $message = trans('extension::base.messages.extension.deleted', [
             'name' => trans($info['title'] ?? $parsed['name']),

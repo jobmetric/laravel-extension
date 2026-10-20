@@ -91,4 +91,21 @@ class ExtensionServiceProvider extends PackageCoreServiceProvider
             }
         });
     }
+    /**
+     * Register committed business outcome definitions alongside legacy events.
+     *
+     * @return void
+     */
+    public function afterBootPackage(): void
+    {
+        if ($this->app->bound('EventRegistry')) {
+            $registry = $this->app->make('EventRegistry');
+            $registry->register(\JobMetric\Extension\Events\Extension\ExtensionDeleteCommittedEvent::class);
+            $registry->register(\JobMetric\Extension\Events\Plugin\PluginStoreCommittedEvent::class);
+            $registry->register(\JobMetric\Extension\Events\Plugin\PluginUpdateCommittedEvent::class);
+            $registry->register(\JobMetric\Extension\Events\Plugin\PluginDeleteCommittedEvent::class);
+            $registry->register(\JobMetric\Extension\Events\Extension\ExtensionInstallCommittedEvent::class);
+            $registry->register(\JobMetric\Extension\Events\Extension\ExtensionUninstallCommittedEvent::class);
+        }
+    }
 }

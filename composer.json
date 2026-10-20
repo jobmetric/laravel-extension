@@ -22,10 +22,10 @@
         }
     ],
     "require": {
-        "php": ">=8.0.1",
+        "php": ">=8.2",
         "laravel/framework": ">=9.19",
-        "jobmetric/laravel-package-core": "^1.38",
-        "jobmetric/laravel-event-system": "^2.8",
+        "jobmetric/laravel-package-core": "^1.39",
+        "jobmetric/laravel-event-system": "^2.10",
         "jobmetric/laravel-form": "^1.6",
         "spatie/laravel-query-builder": "^6.3"
     },
